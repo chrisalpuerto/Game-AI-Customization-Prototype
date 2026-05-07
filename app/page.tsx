@@ -350,7 +350,7 @@ function App() {
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark" />
-          <div className="brand-name">Cortex</div>
+          <div className="brand-name">CPSC 490</div>
           <span className="brand-caret">{I.caret}</span>
         </div>
 
