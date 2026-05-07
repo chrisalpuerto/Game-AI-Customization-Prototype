@@ -1,65 +1,590 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import "./ai-character-studio.css";
+import { useState, useEffect } from "react";
+
+/* ---------- Types ---------- */
+interface IconProps {
+  d: React.ReactNode;
+  size?: number;
+  fill?: string;
+  stroke?: string;
+  sw?: number;
+}
+
+interface SliderProps {
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+  ticks?: boolean;
+  accent?: string;
+  suffix?: string;
+}
+
+interface ParamSliderProps {
+  name: string;
+  help?: string;
+  value: number;
+  onChange: (v: number) => void;
+  lowLabel?: string;
+  highLabel?: string;
+  accent?: string;
+}
+
+type DetectionUnit = "in" | "ft" | "yd" | "mi";
+
+interface DetectionRadiusProps {
+  unit: DetectionUnit;
+  setUnit: (u: DetectionUnit) => void;
+  rangeMin: number;
+  rangeMax: number;
+  value: number;
+  setValue: (v: number) => void;
+  setRange: (lo: number, hi: number) => void;
+}
+
+interface ReactionTimeProps {
+  t: number;
+  setT: (v: number) => void;
+}
+
+interface WeaponWeightProps {
+  value: number;
+  onChange: (v: number) => void;
+}
+
+interface ToggleBarProps {
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+}
+
+interface DiffBarProps {
+  pct: number;
+}
+
+interface TabsProps {
+  items: string[];
+  active: string;
+  onChange: (v: string) => void;
+}
+
+interface Preset {
+  id: string;
+  name: string;
+  icon: React.ReactNode;
+  desc: string;
+  spec: string[];
+}
+
+/* ---------- Icons (inline strokes) ---------- */
+function Icon({ d, size = 16, fill = "none", stroke = "currentColor", sw = 1.6 }: IconProps) {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">{d}</svg>
+  );
+}
+
+const I = {
+  home:  <Icon d={<><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></>} />,
+  bot:   <Icon d={<><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M9 12v2M15 12v2M12 3v4"/><circle cx="12" cy="3" r="1"/></>} />,
+  brain: <Icon d={<><path d="M9 4a3 3 0 0 0-3 3v.5A2.5 2.5 0 0 0 4 10v3a2.5 2.5 0 0 0 2 2.4V17a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3v-1.6a2.5 2.5 0 0 0 2-2.4v-3A2.5 2.5 0 0 0 18 7.5V7a3 3 0 0 0-3-3h-1"/><path d="M12 4v16"/></>} />,
+  flow:  <Icon d={<><circle cx="6" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 6h8M6 8v8a2 2 0 0 0 2 2h8"/></>} />,
+  beaker:<Icon d={<><path d="M9 3h6M10 3v6L5 19a2 2 0 0 0 1.7 3h10.6A2 2 0 0 0 19 19l-5-10V3"/></>} />,
+  chart: <Icon d={<><path d="M4 20V8M10 20V4M16 20v-6M22 20H2"/></>} />,
+  files: <Icon d={<><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></>} />,
+  cog:   <Icon d={<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></>} />,
+  search:<Icon d={<><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></>} />,
+  bell:  <Icon d={<><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M10 21a2 2 0 0 0 4 0"/></>} />,
+  folder:<Icon d={<><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></>} />,
+  reset: <Icon d={<><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></>} />,
+  play:  <Icon d={<><path d="M6 4l14 8-14 8z" fill="currentColor"/></>} />,
+  save:  <Icon d={<><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-6h8v6"/></>} />,
+  rush:  <Icon d={<><path d="M4 12h12M12 6l6 6-6 6"/></>} />,
+  shield:<Icon d={<><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></>} />,
+  scout: <Icon d={<><circle cx="12" cy="12" r="3"/><path d="M2 12h3M19 12h3M12 2v3M12 19v3"/></>} />,
+  ghost: <Icon d={<><path d="M5 11a7 7 0 0 1 14 0v9l-2-2-2 2-2-2-2 2-2-2-2 2-2-2z"/><circle cx="9.5" cy="11" r=".8" fill="currentColor"/><circle cx="14.5" cy="11" r=".8" fill="currentColor"/></>} />,
+  copy:  <Icon d={<><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></>} />,
+  more:  <Icon d={<><circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/></>} />,
+  caret: <Icon d={<><path d="M6 9l6 6 6-6"/></>} sw={1.8} />,
+  side:  <Icon d={<><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></>} />,
+  ask:   <Icon d={<><path d="M3 12a9 9 0 1 1 3.6 7.2L3 21l1.8-3.6A9 9 0 0 1 3 12z"/></>} />,
+  spark: <Icon d={<><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></>} />,
+};
+
+/* ---------- Slider ---------- */
+function Slider({ value, onChange, min = 0, max = 10, step = 0.1, ticks = true, accent = "var(--accent)" }: SliderProps) {
+  const pct = ((value - min) / (max - min)) * 100;
+  return (
+    <div className="slider-track-wrap">
+      <div className="slider-bg" />
+      <div className="slider-fill" style={{ width: pct + "%", background: accent }} />
+      {ticks && (
+        <div className="ticks">
+          {Array.from({ length: 11 }).map((_, i) => <span className="tick" key={i} />)}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      )}
+      <input
+        className="slider"
+        type="range"
+        min={min} max={max} step={step}
+        value={value}
+        onChange={e => onChange(parseFloat(e.target.value))}
+      />
+    </div>
+  );
+}
+
+/* ---------- Param 0–10 slider ---------- */
+function ParamSlider({ name, help, value, onChange, lowLabel, highLabel, accent }: ParamSliderProps) {
+  return (
+    <div className="param">
+      <div className="param-head">
+        <div className="param-name">{name}</div>
+        {help && <div className="param-help">{help}</div>}
+      </div>
+      <div className="slider-wrap">
+        <Slider value={value} onChange={onChange} min={0} max={10} step={0.1} accent={accent} />
+        <div className="slider-readout">{value.toFixed(1)}<span className="unit">/10</span></div>
+      </div>
+      {(lowLabel || highLabel) && (
+        <div className="slider-extremes"><span>{lowLabel}</span><span>{highLabel}</span></div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Detection radius (slider + unit + range inputs) ---------- */
+const UNIT_TO_M: Record<DetectionUnit, number> = { in: 0.0254, ft: 0.3048, yd: 0.9144, mi: 1609.34 };
+
+function DetectionRadius({ unit, setUnit, rangeMin, rangeMax, value, setValue, setRange }: DetectionRadiusProps) {
+  const mVal = (value * UNIT_TO_M[unit]).toFixed(1);
+  return (
+    <div className="param">
+      <div className="param-head">
+        <div className="param-name">Detection Radius</div>
+        <div className="param-help">Maximum range at which the agent can sense players, sound events, and projectiles.</div>
+      </div>
+      <div className="slider-wrap">
+        <Slider value={value} onChange={setValue} min={rangeMin} max={rangeMax} step={(rangeMax - rangeMin) / 200} ticks={false} />
+        <div className="slider-readout">{value.toFixed(unit === 'mi' ? 2 : 1)}<span className="unit">{unit}</span></div>
+      </div>
+      <div className="slider-extremes" style={{ marginTop: 4 }}>
+        <span>≈ {mVal} m equivalent</span>
+        <span>{unit === 'mi' ? 'long-range scout' : unit === 'in' ? 'point-blank only' : 'standard sightline'}</span>
+      </div>
+      <div className="range-row">
+        <span className="label">RANGE</span>
+        <input className="num-input" type="number" value={rangeMin} onChange={e => setRange(parseFloat(e.target.value) || 0, rangeMax)} />
+        <span className="label">→</span>
+        <input className="num-input" type="number" value={rangeMax} onChange={e => setRange(rangeMin, parseFloat(e.target.value) || 0)} />
+        <span className="label" style={{ marginLeft: 8 }}>UNIT</span>
+        <select className="unit-select" value={unit} onChange={e => setUnit(e.target.value as DetectionUnit)}>
+          <option value="in">inches</option>
+          <option value="ft">feet</option>
+          <option value="yd">yards</option>
+          <option value="mi">miles</option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Reaction time (exponential 1.5) ---------- */
+// t01 in [0..1] -> ms 50..3000 with exponent 1.5
+function reactionFromT(t: number): number {
+  const minMs = 50, maxMs = 3000;
+  const eased = Math.pow(t, 1.5);
+  return minMs + eased * (maxMs - minMs);
+}
+
+function ReactionTime({ t, setT }: ReactionTimeProps) {
+  const ms = reactionFromT(t);
+  const display = ms < 1000 ? `${ms.toFixed(0)} ms` : `${(ms / 1000).toFixed(2)} s`;
+  return (
+    <div className="param">
+      <div className="param-head">
+        <div className="param-name">Reaction Time</div>
+        <div className="param-help">Latency between perceiving a stimulus and acting. Curve scales exponentially (γ=1.5) — slow zone grows fast at the upper end.</div>
+      </div>
+      <div className="slider-wrap">
+        <Slider value={t} onChange={setT} min={0} max={1} step={0.001} ticks={false} />
+        <div className="slider-readout">{display}</div>
+      </div>
+      <div className="slider-extremes"><span>50 ms — frame-perfect</span><span>3.0 s — sluggish</span></div>
+    </div>
+  );
+}
+
+/* ---------- Toggle switch ---------- */
+function ToggleBar({ options, value, onChange }: ToggleBarProps) {
+  const idx = options.indexOf(value);
+  const w = 100 / options.length;
+  return (
+    <div className="toggle-bar">
+      <div className="knob" style={{ left: `calc(${idx * w}% + 4px)`, width: `calc(${w}% - 8px)` }} />
+      {options.map(o => (
+        <button key={o} className={"toggle-opt" + (o === value ? " on" : "")} onClick={() => onChange(o)}>{o}</button>
+      ))}
+    </div>
+  );
+}
+
+/* ---------- Weapon weight (continuous toggle slider) ---------- */
+function WeaponWeight({ value, onChange }: WeaponWeightProps) {
+  const pct = (value + 1) * 50;  // -1..1 -> 0..100
+  return (
+    <div className="param">
+      <div className="param-head">
+        <div className="param-name">Weapon Preference Weight</div>
+        <div className="param-help">Bias toward favoring particular engagement ranges when picking a weapon.</div>
+      </div>
+      <div className="slider-wrap">
+        <div className="slider-track-wrap" style={{ height: 22 }}>
+          <div className="slider-bg" />
+          <div style={{
+            position: 'absolute', left: '50%', top: '50%',
+            transform: 'translate(-50%,-50%)', width: 1, height: 14, background: 'var(--ink-3)', opacity: .4
+          }} />
+          {/* fill from center */}
+          <div style={{
+            position: 'absolute', top: '50%', height: 4, transform: 'translateY(-50%)',
+            background: 'var(--ink)', borderRadius: 2,
+            left: value < 0 ? `${pct}%` : '50%',
+            width: `${Math.abs(value) * 50}%`
+          }} />
+          <input
+            className="slider"
+            type="range" min={-1} max={1} step={0.01}
+            value={value}
+            onChange={e => onChange(parseFloat(e.target.value))}
+          />
+        </div>
+        <div className="slider-readout">
+          {value === 0 ? "neutral" : `${value > 0 ? "+" : ""}${(value * 100).toFixed(0)}%`}
+        </div>
+      </div>
+      <div className="slider-extremes">
+        <span>← Long range · sniper, DMR</span>
+        <span>SMG, shotgun · Short range →</span>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Diff bar ---------- */
+function DiffBar({ pct }: DiffBarProps) { return <div className="diff-bar"><span style={{ width: pct + '%' }} /></div>; }
+
+/* ---------- Tabs ---------- */
+function Tabs({ items, active, onChange }: TabsProps) {
+  return (
+    <div className="tabs">
+      {items.map(it => (
+        <button key={it} className={"tab" + (it === active ? " on" : "")} onClick={() => onChange(it)}>{it}</button>
+      ))}
+    </div>
+  );
+}
+
+/* ---------- Combat role presets ---------- */
+const PRESETS: Preset[] = [
+  { id: "rusher",   name: "Aggressive Rusher",  icon: I.rush,   desc: "Closes distance fast. High aggression, low caution.", spec: ["AGGR 9.0", "CAUT 2.0", "RANGE -0.6"] },
+  { id: "tactical", name: "Tactical Soldier",   icon: I.shield, desc: "Balanced, uses cover, coordinates with squad.",        spec: ["AGGR 5.5", "AWARE 7.5", "COORD 8"] },
+  { id: "survivor", name: "Cautious Survivor",  icon: I.ghost,  desc: "Avoids fights unless cornered. Resource-efficient.",   spec: ["AGGR 2.0", "DEF 9.0", "HEALTH 9"] },
+  { id: "scout",    name: "Recon Scout",        icon: I.scout,  desc: "Watches, marks targets, repositions before engaging.", spec: ["AWARE 9.5", "RANGE +0.4", "COORD 6"] },
+];
+
+/* ---------- App ---------- */
+function App() {
+  const [tab, setTab] = useState("Behavior");
+
+  // Section 1
+  const [aggression, setAggression] = useState(6.4);
+  const [defensive, setDefensive]   = useState(3.8);
+  const [tactical, setTactical]     = useState(7.2);
+  const [decision, setDecision]     = useState(5.5);
+
+  // Section 2
+  const [unit, setUnit] = useState<DetectionUnit>("ft");
+  const [rng, setRng]   = useState<{ min: number; max: number }>({ min: 0, max: 200 });
+  const [radius, setRadius] = useState(85);
+  const setRange = (lo: number, hi: number) => setRng({ min: lo, max: hi });
+  // keep radius inside range
+  useEffect(() => {
+    if (radius < rng.min) setRadius(rng.min);
+    if (radius > rng.max) setRadius(rng.max);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rng.min, rng.max]);
+
+  const [reactT, setReactT] = useState(0.32);
+  const [moveSpd, setMoveSpd] = useState(6.0);
+
+  // Section 3
+  const [healthW, setHealthW] = useState(7.5);
+  const [ammoW, setAmmoW]     = useState(4.0);
+  const [weaponBias, setWeaponBias] = useState(-0.25);
+  const [coord, setCoord] = useState("Squad");
+
+  // Section 4
+  const [diff, setDiff] = useState(6.0);
+  const [preset, setPreset] = useState("tactical");
+
+  // Apply preset
+  function applyPreset(id: string) {
+    setPreset(id);
+    if (id === "rusher")   { setAggression(9); setDefensive(2); setTactical(5); setDecision(7); setReactT(0.18); setMoveSpd(8.5); setHealthW(3); setAmmoW(5); setWeaponBias(-0.6); setCoord("Lone wolf"); }
+    if (id === "tactical") { setAggression(5.5); setDefensive(5.5); setTactical(7.5); setDecision(6); setReactT(0.32); setMoveSpd(6); setHealthW(7); setAmmoW(6); setWeaponBias(-0.05); setCoord("Squad"); }
+    if (id === "survivor") { setAggression(2); setDefensive(9); setTactical(6.5); setDecision(4); setReactT(0.45); setMoveSpd(4.5); setHealthW(9); setAmmoW(8); setWeaponBias(0.2); setCoord("Lone wolf"); }
+    if (id === "scout")    { setAggression(3.5); setDefensive(6); setTactical(9.5); setDecision(7); setReactT(0.22); setMoveSpd(7); setHealthW(6); setAmmoW(5); setWeaponBias(0.4); setCoord("Pair"); }
+  }
+
+  // Difficulty-derived stats
+  const reactMs = reactionFromT(reactT) * (1 - (diff - 5) * 0.04);
+  const aware = Math.min(10, tactical * (0.7 + diff * 0.06));
+  const decQ  = Math.min(10, decision * (0.7 + diff * 0.06));
+
+  return (
+    <div className="app">
+      {/* SIDEBAR */}
+      <aside className="sidebar">
+        <div className="brand">
+          <div className="brand-mark" />
+          <div className="brand-name">Cortex</div>
+          <span className="brand-caret">{I.caret}</span>
+        </div>
+
+        <div className="nav-group">
+          <button className="nav-item">{I.home}<span>Home</span></button>
+          <button className="nav-item">{I.bot}<span>Characters</span><span className="badge">14</span></button>
+          <button className="nav-item active">{I.brain}<span>Behavior</span></button>
+          <button className="nav-item">{I.flow}<span>Flows</span></button>
+          <button className="nav-item">{I.beaker}<span>Sandbox</span></button>
+          <button className="nav-item">{I.chart}<span>Telemetry</span></button>
+          <button className="nav-item">{I.files}<span>Exports</span></button>
+        </div>
+
+        <div className="nav-label">Pinned</div>
+        <div className="nav-group">
+          <button className="nav-item">{I.spark}<span>Recently played</span></button>
+          <button className="nav-item">{I.folder}<span>Wraith — boss</span></button>
+          <button className="nav-item">{I.folder}<span>Patrol grunts</span></button>
+          <button className="nav-item">{I.cog}<span>Project settings</span></button>
+        </div>
+
+        <div className="sidebar-foot">
+          <div className="avatar" />
+          <div className="who">
+            <span className="who-name">Atlas Studios</span>
+            <span className="who-role">Lead AI · Cole D.</span>
+          </div>
+        </div>
+      </aside>
+
+      {/* MAIN */}
+      <main className="main">
+        <div className="topbar">
+          <button className="icon-btn" title="Collapse sidebar">{I.side}</button>
+          <div className="crumbs">
+            <span>Characters</span>
+            <span className="sep">›</span>
+            <span>Wraith</span>
+            <span className="sep">›</span>
+            <span className="here">Behavior Profile</span>
+          </div>
+          <div className="topbar-actions">
+            <button className="pill-btn">{I.ask}<span>Ask</span></button>
+            <button className="pill-btn">{I.copy}<span>Duplicate</span></button>
+            <button className="icon-btn">{I.bell}</button>
+            <button className="pill-btn">{I.play}<span>Test in Sandbox</span></button>
+            <button className="pill-btn primary">{I.save}<span>Save profile</span><span className="kbd">⌘S</span></button>
+          </div>
+        </div>
+
+        <div className="page">
+          {/* HEADER */}
+          <div className="page-head">
+            <div>
+              <h1 className="page-title">Behavior Profile</h1>
+              <p className="page-sub">Tune perception, judgement, and combat priorities for this NPC. Changes propagate live to running sandbox sessions.</p>
+            </div>
+            <div className="profile-meta">
+              <Tabs items={["Behavior", "Dialogue", "Animation", "Memory"]} active={tab} onChange={setTab} />
+              <div className="char-card">
+                <div className="char-portrait" />
+                <div>
+                  <div className="char-name">Wraith — Heavy Operator</div>
+                  <div className="char-meta">v0.8.3 · build 4127 · last sim 12m ago</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 1 — Personality */}
+          <section className="section">
+            <div className="section-head">
+              <div className="section-num">01</div>
+              <div>
+                <h2 className="section-title">Personality &amp; Behavior Biases</h2>
+                <p className="section-desc">High-level dispositions that color decision-making across all encounters.</p>
+              </div>
+              <div className="section-tools">
+                <button className="icon-btn" title="Reset">{I.reset}</button>
+                <button className="icon-btn" title="More">{I.more}</button>
+              </div>
+            </div>
+            <div className="param-grid">
+              <ParamSlider name="Aggression Level" help="Eagerness to initiate and press attacks." value={aggression} onChange={setAggression} lowLabel="passive" highLabel="bloodthirsty" />
+              <ParamSlider name="Defensiveness / Passiveness" help="Tendency to seek cover and avoid exposure." value={defensive} onChange={setDefensive} lowLabel="reckless" highLabel="turtle" />
+              <ParamSlider name="Tactical Awareness" help="Map reading, flanking, line-of-sight management." value={tactical} onChange={setTactical} lowLabel="oblivious" highLabel="general" />
+              <ParamSlider name="Decision Threshold" help="Confidence required before committing to an action." value={decision} onChange={setDecision} lowLabel="impulsive" highLabel="deliberate" />
+            </div>
+          </section>
+
+          {/* SECTION 2 — Perception */}
+          <section className="section">
+            <div className="section-head">
+              <div className="section-num">02</div>
+              <div>
+                <h2 className="section-title">Perceptual &amp; Performance Limits</h2>
+                <p className="section-desc">Hard ceilings on what the agent can sense and how fast it can act.</p>
+              </div>
+              <div className="section-tools">
+                <button className="icon-btn">{I.reset}</button>
+                <button className="icon-btn">{I.more}</button>
+              </div>
+            </div>
+            <div className="param-grid one">
+              <DetectionRadius
+                unit={unit} setUnit={setUnit}
+                rangeMin={rng.min} rangeMax={rng.max} setRange={setRange}
+                value={radius} setValue={setRadius}
+              />
+            </div>
+            <div className="param-grid">
+              <ReactionTime t={reactT} setT={setReactT} />
+              <ParamSlider name="Movement Speed" help="Top traversal speed multiplier." value={moveSpd} onChange={setMoveSpd} lowLabel="hobble" highLabel="sprint" />
+            </div>
+          </section>
+
+          {/* SECTION 3 — Resources & Combat */}
+          <section className="section">
+            <div className="section-head">
+              <div className="section-num">03</div>
+              <div>
+                <h2 className="section-title">Resource &amp; Combat Priorities</h2>
+                <p className="section-desc">How much the agent values upkeep versus output.</p>
+              </div>
+              <div className="section-tools">
+                <button className="icon-btn">{I.reset}</button>
+                <button className="icon-btn">{I.more}</button>
+              </div>
+            </div>
+            <div className="param-grid">
+              <ParamSlider name="Health Importance" help="Likelihood to break engagement to heal or retreat." value={healthW} onChange={setHealthW} lowLabel="ignore" highLabel="self-preserve" />
+              <ParamSlider name="Ammo Importance" help="Conservatism of fire — bursts vs. spray." value={ammoW} onChange={setAmmoW} lowLabel="spray" highLabel="conserve" />
+              <WeaponWeight value={weaponBias} onChange={setWeaponBias} />
+              <div className="param">
+                <div className="param-head">
+                  <div className="param-name">Coordination Tendency</div>
+                  <div className="param-help">How willing the agent is to share intel and synchronize moves with allies.</div>
+                </div>
+                <ToggleBar options={["Lone wolf", "Pair", "Squad", "Hivemind"]} value={coord} onChange={setCoord} />
+                <div className="slider-extremes" style={{ marginTop: 8 }}>
+                  <span>operates independently</span>
+                  <span>fully networked</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* SECTION 4 — Difficulty */}
+          <section className="section">
+            <div className="section-head">
+              <div className="section-num">04</div>
+              <div>
+                <h2 className="section-title">Difficulty Presets</h2>
+                <p className="section-desc">Global scalers and one-click archetypes that overwrite the values above.</p>
+              </div>
+              <div className="section-tools">
+                <button className="icon-btn">{I.reset}</button>
+                <button className="icon-btn">{I.more}</button>
+              </div>
+            </div>
+
+            <div className="param-grid one">
+              <ParamSlider
+                name="Difficulty Scaling"
+                help="Globally scales reaction speed, awareness, and decision quality. Stacks multiplicatively with the values above."
+                value={diff} onChange={setDiff}
+                lowLabel="story mode" highLabel="ironman"
+                accent="var(--ink)"
+              />
+            </div>
+
+            <div className="diff-preview">
+              <div className="diff-stat">
+                <div className="diff-stat-label">Effective reaction</div>
+                <div className="diff-stat-row">
+                  <span className="diff-stat-val">{reactMs < 1000 ? reactMs.toFixed(0) : (reactMs / 1000).toFixed(2)}</span>
+                  <span className="diff-stat-unit">{reactMs < 1000 ? "ms" : "s"}</span>
+                </div>
+                <DiffBar pct={Math.max(0, Math.min(100, 100 - (reactMs / 3000) * 100))} />
+              </div>
+              <div className="diff-stat">
+                <div className="diff-stat-label">Awareness factor</div>
+                <div className="diff-stat-row">
+                  <span className="diff-stat-val">{aware.toFixed(2)}</span>
+                  <span className="diff-stat-unit">/ 10</span>
+                </div>
+                <DiffBar pct={aware * 10} />
+              </div>
+              <div className="diff-stat">
+                <div className="diff-stat-label">Decision quality</div>
+                <div className="diff-stat-row">
+                  <span className="diff-stat-val">{decQ.toFixed(2)}</span>
+                  <span className="diff-stat-unit">/ 10</span>
+                </div>
+                <DiffBar pct={decQ * 10} />
+              </div>
+              <div className="diff-stat">
+                <div className="diff-stat-label">Estimated TTK Δ</div>
+                <div className="diff-stat-row">
+                  <span className="diff-stat-val">{diff < 5 ? "+" : "−"}{Math.abs((diff - 5) * 7).toFixed(0)}%</span>
+                  <span className="diff-stat-unit">vs. baseline</span>
+                </div>
+                <DiffBar pct={Math.abs(diff - 5) * 20} />
+              </div>
+            </div>
+
+            <div style={{ margin: '24px 0 12px', display: 'flex', alignItems: 'baseline', gap: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>Combat Role Presets</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>One-click archetypes — overwrite the values in sections 01–03.</div>
+            </div>
+            <div className="preset-grid">
+              {PRESETS.map(p => (
+                <button key={p.id} className={"preset" + (preset === p.id ? " selected" : "")} onClick={() => applyPreset(p.id)}>
+                  <div className="preset-icon">{p.icon}</div>
+                  <div className="preset-name">{p.name}</div>
+                  <div className="preset-desc">{p.desc}</div>
+                  <div className="preset-spec">{p.spec.map(s => <span className="spec-pill mono" key={s}>{s}</span>)}</div>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* Floating action bar */}
+          <div className="floater">
+            <span className="status"><span className="pulse" />3 unsaved changes · live in sandbox</span>
+            <span className="spacer" />
+            <button className="pill-btn ghost">Discard</button>
+            <button className="pill-btn ghost">{I.play}<span>Re-run sim</span></button>
+            <button className="pill-btn accent">{I.save}<span>Save &amp; deploy</span></button>
+          </div>
         </div>
       </main>
     </div>
   );
 }
+
+export default App;
