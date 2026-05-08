@@ -295,6 +295,33 @@ const PRESETS: Preset[] = [
   { id: "scout",    name: "Recon Scout",        icon: I.scout,  desc: "Watches, marks targets, repositions before engaging.", spec: ["AWARE 9.5", "RANGE +0.4", "COORD 6"] },
 ];
 
+/* ---------- FloatingActionBar ---------- */
+function FloatingActionBar() {
+  const [expanded, setExpanded] = useState(true);
+  const cls = expanded ? "floater-wrap--expanded" : "floater-wrap--collapsed";
+  return (
+    <div className={"floater-wrap " + cls}>
+      <div className="floater">
+        <span className="status"><span className="pulse" />3 unsaved changes · live in sandbox</span>
+        <span className="spacer" />
+        <button className="pill-btn ghost">Discard</button>
+        <button className="pill-btn ghost">{I.play}<span>Re-run sim</span></button>
+        <button className="pill-btn accent">{I.save}<span>Save &amp; deploy</span></button>
+        <button className="floater-toggle" onClick={() => setExpanded(false)} aria-label="Collapse">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="2,5 7,10 12,5" />
+          </svg>
+        </button>
+      </div>
+      <button className="floater-expand" onClick={() => setExpanded(true)} aria-label="Expand">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="2,9 7,4 12,9" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 /* ---------- App ---------- */
 function App() {
   const [tab, setTab] = useState("Behavior");
@@ -375,8 +402,8 @@ function App() {
         <div className="sidebar-foot">
           <div className="avatar" />
           <div className="who">
-            <span className="who-name">Atlas Studios</span>
-            <span className="who-role">Lead AI · Cole D.</span>
+            <span className="who-name">Group 4</span>
+            <span className="who-role">Game Dev · Alex</span>
           </div>
         </div>
       </aside>
@@ -574,13 +601,7 @@ function App() {
           </section>
 
           {/* Floating action bar */}
-          <div className="floater">
-            <span className="status"><span className="pulse" />3 unsaved changes · live in sandbox</span>
-            <span className="spacer" />
-            <button className="pill-btn ghost">Discard</button>
-            <button className="pill-btn ghost">{I.play}<span>Re-run sim</span></button>
-            <button className="pill-btn accent">{I.save}<span>Save &amp; deploy</span></button>
-          </div>
+          <FloatingActionBar />
         </div>
       </main>
     </div>
