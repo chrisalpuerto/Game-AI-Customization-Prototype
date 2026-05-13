@@ -4,6 +4,8 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { ContactShadows, useAnimations, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
+import Link from "next/link";
+import MiniDashboard from "../components/mini-dashboard";
 
 const SOLDIER_SCALE = 1.8 / 184.81;
 const SOLDIER_Y_OFFSET = 91.9 * SOLDIER_SCALE;
@@ -131,8 +133,28 @@ function StudioBackdrop() {
   );
 }
 
+const btnStyle: React.CSSProperties = {
+  padding: "8px 16px",
+  borderRadius: 999,
+  border: "1px solid rgba(0,0,0,0.12)",
+  background: "rgba(255,255,255,0.88)",
+  color: "#14130F",
+  fontFamily: "'Inter', system-ui, sans-serif",
+  fontSize: 13,
+  fontWeight: 500,
+  cursor: "pointer",
+  boxShadow: "0 2px 12px rgba(0,0,0,0.15)",
+  backdropFilter: "blur(8px)",
+  WebkitBackdropFilter: "blur(8px)",
+  textDecoration: "none",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+};
+
 export default function GameDemo2Page() {
   const [isShooting, setIsShooting] = useState(false);
+  const [dashOpen, setDashOpen] = useState(true);
   const keysRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -220,6 +242,20 @@ export default function GameDemo2Page() {
           color="#8e8476"
         />
       </Canvas>
+
+      <div style={{ position: "fixed", top: 24, left: 24, zIndex: 50 }}>
+        <Link href="/" style={btnStyle}>← Dashboard</Link>
+      </div>
+
+      {!dashOpen && (
+        <button
+          onClick={() => setDashOpen(true)}
+          style={{ ...btnStyle, position: "fixed", top: 24, right: 32, zIndex: 50 }}
+        >
+          Open Dashboard
+        </button>
+      )}
+      <MiniDashboard open={dashOpen} onClose={() => setDashOpen(false)} />
     </div>
   );
 }

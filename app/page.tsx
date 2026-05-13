@@ -422,7 +422,7 @@ function App() {
             <button className="pill-btn">{I.ask}<span>Ask</span></button>
             <button className="pill-btn">{I.copy}<span>Duplicate</span></button>
             <button className="icon-btn">{I.bell}</button>
-            <Link href="/game-demo" className="pill-btn">{I.play}<span>Test in Sandbox</span></Link>
+            <Link href="/game-demo2" className="pill-btn">{I.play}<span>Test in Sandbox</span></Link>
             <button className="pill-btn primary">{I.save}<span>Save profile</span><span className="kbd">⌘S</span></button>
           </div>
         </div>
