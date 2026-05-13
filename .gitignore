@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+app/cloudview
+app/cloudview2
+app/threejs
+
+public/solderv2_gametest.glb
+public/Soldier1_gametest.glb

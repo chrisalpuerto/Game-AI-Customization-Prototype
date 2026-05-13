@@ -1,9 +1,9 @@
 "use client";
-
 import "./ai-character-studio.css";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
-/* ---------- Types ---------- */
+/* types */
 interface IconProps {
   d: React.ReactNode;
   size?: number;
@@ -11,7 +11,6 @@ interface IconProps {
   stroke?: string;
   sw?: number;
 }
-
 interface SliderProps {
   value: number;
   onChange: (v: number) => void;
@@ -423,7 +422,7 @@ function App() {
             <button className="pill-btn">{I.ask}<span>Ask</span></button>
             <button className="pill-btn">{I.copy}<span>Duplicate</span></button>
             <button className="icon-btn">{I.bell}</button>
-            <button className="pill-btn">{I.play}<span>Test in Sandbox</span></button>
+            <Link href="/game-demo" className="pill-btn">{I.play}<span>Test in Sandbox</span></Link>
             <button className="pill-btn primary">{I.save}<span>Save profile</span><span className="kbd">⌘S</span></button>
           </div>
         </div>
