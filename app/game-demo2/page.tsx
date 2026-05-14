@@ -12,6 +12,10 @@ const SOLDIER_Y_OFFSET = 91.9 * SOLDIER_SCALE;
 const CROSSFADE_DURATION = 0.2;
 const MOVE_SPEED = 2.6;
 const TURN_SPEED = 10;
+const FLOATING_ORIGIN_THRESHOLD = 5000;
+const FLOATING_ORIGIN_THRESHOLD_SQ = FLOATING_ORIGIN_THRESHOLD * FLOATING_ORIGIN_THRESHOLD;
+const WORLD_SHIFT = new THREE.Vector3();
+const NPC_SPAWN_OFFSET = new THREE.Vector3(0.9, 0, -0.9);
 
 function LoadingFallback() {
   return (
@@ -27,9 +31,11 @@ type SoldierAction = "Idle" | "Shoot" | "Run" | "Running";
 function SoldierIdle({
   isShooting,
   keysRef,
+  playerPositionRef,
 }: {
   isShooting: boolean;
   keysRef: React.RefObject<Set<string>>;
+  playerPositionRef: React.RefObject<THREE.Vector3>;
 }) {
   const wrapper = useRef<THREE.Group>(null);
   const root = useRef<THREE.Group>(null);
@@ -69,6 +75,19 @@ function SoldierIdle({
       root.current.rotation.y += rotationDelta * Math.min(TURN_SPEED * delta, 1);
     }
 
+    if (
+      wrapper.current.position.x * wrapper.current.position.x +
+        wrapper.current.position.z * wrapper.current.position.z >
+      FLOATING_ORIGIN_THRESHOLD_SQ
+    ) {
+      WORLD_SHIFT.set(wrapper.current.position.x, 0, wrapper.current.position.z);
+
+      for (const child of _.scene.children) {
+        child.position.sub(WORLD_SHIFT);
+      }
+      _.camera.position.sub(WORLD_SHIFT);
+    }
+
     const runActionName = getRunActionName();
     const nextAction: SoldierAction = isShooting
       ? "Shoot"
@@ -81,6 +100,12 @@ function SoldierIdle({
       actions[nextAction]?.reset().fadeIn(CROSSFADE_DURATION).play();
       currentAction.current = nextAction;
     }
+
+    playerPositionRef.current.set(
+      wrapper.current.position.x,
+      wrapper.current.position.y,
+      wrapper.current.position.z,
+    );
   });
 
   useEffect(() => {
@@ -106,6 +131,66 @@ function SoldierIdle({
   return (
     <group ref={wrapper} position={[0, SOLDIER_Y_OFFSET, 0]} scale={SOLDIER_SCALE}>
       <group ref={root} rotation={[0, Math.PI, 0]}>
+        <primitive object={scene} />
+      </group>
+    </group>
+  );
+}
+
+function PassiveSoldier({
+  playerPositionRef,
+}: {
+  playerPositionRef: React.RefObject<THREE.Vector3>;
+}) {
+  const wrapper = useRef<THREE.Group>(null);
+  const root = useRef<THREE.Group>(null);
+  const { scene, animations } = useGLTF("/solderv3_gametest.glb");
+  const { actions } = useAnimations(animations, root);
+
+  useEffect(() => {
+    scene.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      if (mesh.isMesh) {
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+      }
+    });
+  }, [scene]);
+
+  useEffect(() => {
+    const idleAction = actions.Idle;
+    idleAction?.reset().fadeIn(CROSSFADE_DURATION).play();
+
+    return () => {
+      idleAction?.fadeOut(CROSSFADE_DURATION);
+    };
+  }, [actions]);
+
+  useEffect(() => {
+    if (!wrapper.current || !root.current) return;
+
+    const playerPosition = playerPositionRef.current;
+    const lookTarget = new THREE.Vector3(
+      playerPosition.x,
+      wrapper.current.position.y,
+      playerPosition.z,
+    );
+
+    root.current.lookAt(lookTarget);
+    root.current.rotateY(Math.PI);
+  }, [playerPositionRef]);
+
+  return (
+    <group
+      ref={wrapper}
+      position={[
+        NPC_SPAWN_OFFSET.x,
+        SOLDIER_Y_OFFSET,
+        NPC_SPAWN_OFFSET.z,
+      ]}
+      scale={SOLDIER_SCALE}
+    >
+      <group ref={root}>
         <primitive object={scene} />
       </group>
     </group>
@@ -156,6 +241,7 @@ export default function GameDemo2Page() {
   const [isShooting, setIsShooting] = useState(false);
   const [dashOpen, setDashOpen] = useState(true);
   const keysRef = useRef<Set<string>>(new Set());
+  const playerPositionRef = useRef(new THREE.Vector3(0, SOLDIER_Y_OFFSET, 0));
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -230,7 +316,12 @@ export default function GameDemo2Page() {
         <StudioBackdrop />
 
         <Suspense fallback={<LoadingFallback />}>
-          <SoldierIdle isShooting={isShooting} keysRef={keysRef} />
+          <SoldierIdle
+            isShooting={isShooting}
+            keysRef={keysRef}
+            playerPositionRef={playerPositionRef}
+          />
+          <PassiveSoldier playerPositionRef={playerPositionRef} />
         </Suspense>
 
         <ContactShadows
@@ -252,7 +343,7 @@ export default function GameDemo2Page() {
           onClick={() => setDashOpen(true)}
           style={{ ...btnStyle, position: "fixed", top: 24, right: 32, zIndex: 50 }}
         >
-          Open Dashboard
+          Open Mini-Dashboard
         </button>
       )}
       <MiniDashboard open={dashOpen} onClose={() => setDashOpen(false)} />
@@ -261,3 +352,4 @@ export default function GameDemo2Page() {
 }
 
 useGLTF.preload("/solderv2_gametest.glb");
+useGLTF.preload("/solderv3_gametest.glb");

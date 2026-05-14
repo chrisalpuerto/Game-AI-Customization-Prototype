@@ -1,0 +1,4 @@
+/Users/chrisalpuerto/Desktop/PROJECTS/cpsc490-ui-prototype/game_cpp/src2/build/CMakeFiles/behavior_driven_cells_headless.dir
+/Users/chrisalpuerto/Desktop/PROJECTS/cpsc490-ui-prototype/game_cpp/src2/build/CMakeFiles/behavior_driven_cells_ws.dir
+/Users/chrisalpuerto/Desktop/PROJECTS/cpsc490-ui-prototype/game_cpp/src2/build/CMakeFiles/edit_cache.dir
+/Users/chrisalpuerto/Desktop/PROJECTS/cpsc490-ui-prototype/game_cpp/src2/build/CMakeFiles/rebuild_cache.dir
