@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "ws": "cd game_cpp/src2 && ./build/behavior_driven_cells_ws",
+    "run_ws": "cd game_cpp/src2 && ./build/behavior_driven_cells_ws",
     "dev": "next dev",
+    "dev_all": "concurrently -n ws,dev -c red,blue \"npm run ws\" \"npm run dev\"",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
