@@ -21,6 +21,7 @@ add_executable(behavior_driven_cells_headless
 
 add_executable(behavior_driven_cells_parity_tests
   parity_tests.cpp
+  snapshot_json.cpp
   Vector.cpp
   myPoint.cpp
   myMatrix.cpp

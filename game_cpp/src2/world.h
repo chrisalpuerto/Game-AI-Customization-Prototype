@@ -58,13 +58,52 @@ struct EntitySnapshot {
   float vx = 0;
   float vy = 0;
   bool alive = true;
+  float energy = 0;
+  bool hungry = false;
+  bool feedMode = false;
+  bool bored = false;
+  bool explore = false;
+  bool busy = false;
+  bool pursuingFood = false;
+  bool foodWithinGrasp = false;
+  bool pursuingPush = false;
+  bool pushWithinGrasp = false;
+  bool doObserve = false;
+  bool analyzeObservation = false;
+  bool confused = false;
+  int awarenessCount = 0;
+  int graspCount = 0;
+  int responseTicks = 0;
+  int endTick = 0;
+  std::string ooiType;
+  std::string pushGoalType;
+  std::string mode;
+};
+
+struct PushabilitySnapshot {
+  std::string objectType;
+  float pushability = 0;
+  float confidence = 0;
+  int numTrials = 0;
+};
+
+struct ConclusionSnapshot {
+  std::string actionName;
+  std::string objectType;
+  std::string subject;
+  std::vector<std::string> result;
+};
+
+struct CellSnapshot : public EntitySnapshot {
+  std::vector<PushabilitySnapshot> pushDb;
+  std::vector<ConclusionSnapshot> recentConclusions;
 };
 
 struct WorldSnapshot {
   float time = 0;
   int width = 0;
   int height = 0;
-  std::vector<EntitySnapshot> cells;
+  std::vector<CellSnapshot> cells;
   std::vector<EntitySnapshot> food;
   std::vector<EntitySnapshot> barriers;
 };

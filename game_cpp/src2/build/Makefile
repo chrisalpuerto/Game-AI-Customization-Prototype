@@ -472,6 +472,7 @@ snapshot_json.o: snapshot_json.cpp.o
 
 # target to build an object file
 snapshot_json.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/behavior_driven_cells_parity_tests.dir/build.make CMakeFiles/behavior_driven_cells_parity_tests.dir/snapshot_json.cpp.o
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/behavior_driven_cells_ws.dir/build.make CMakeFiles/behavior_driven_cells_ws.dir/snapshot_json.cpp.o
 .PHONY : snapshot_json.cpp.o
 
@@ -480,6 +481,7 @@ snapshot_json.i: snapshot_json.cpp.i
 
 # target to preprocess a source file
 snapshot_json.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/behavior_driven_cells_parity_tests.dir/build.make CMakeFiles/behavior_driven_cells_parity_tests.dir/snapshot_json.cpp.i
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/behavior_driven_cells_ws.dir/build.make CMakeFiles/behavior_driven_cells_ws.dir/snapshot_json.cpp.i
 .PHONY : snapshot_json.cpp.i
 
@@ -488,6 +490,7 @@ snapshot_json.s: snapshot_json.cpp.s
 
 # target to generate assembly for a file
 snapshot_json.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/behavior_driven_cells_parity_tests.dir/build.make CMakeFiles/behavior_driven_cells_parity_tests.dir/snapshot_json.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/behavior_driven_cells_ws.dir/build.make CMakeFiles/behavior_driven_cells_ws.dir/snapshot_json.cpp.s
 .PHONY : snapshot_json.cpp.s
 

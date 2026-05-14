@@ -278,6 +278,7 @@ WorldSnapshot World::snapshot() const {
   snap.time = world_time;
   snap.width = world_width;
   snap.height = world_height;
+  constexpr size_t kRecentConclusionLimit = 5;
 
   for (const auto& object : objects) {
     if (!object) continue;
@@ -291,9 +292,58 @@ WorldSnapshot World::snapshot() const {
     item.vy = object->vel.tuple[1];
     item.alive = object->alive;
 
-    if (object->type == "cell") snap.cells.push_back(item);
-    else if (object->type == "food") snap.food.push_back(item);
-    else if (object->type == "barrier") snap.barriers.push_back(item);
+    if (object->type == "cell") {
+      const auto* cell = static_cast<const Cell*>(object.get());
+      CellSnapshot cell_item;
+      static_cast<EntitySnapshot&>(cell_item) = item;
+      cell_item.energy = cell->energy;
+      cell_item.hungry = cell->hungry;
+      cell_item.feedMode = cell->feed_mode;
+      cell_item.bored = cell->bored;
+      cell_item.explore = cell->explore;
+      cell_item.busy = cell->busy;
+      cell_item.pursuingFood = cell->pursuing_food;
+      cell_item.foodWithinGrasp = cell->food_within_grasp;
+      cell_item.pursuingPush = cell->pursuing_push;
+      cell_item.pushWithinGrasp = cell->push_within_grasp;
+      cell_item.doObserve = cell->do_observe;
+      cell_item.analyzeObservation = cell->analyze_observation;
+      cell_item.confused = cell->confused;
+      cell_item.awarenessCount = static_cast<int>(cell->awareness.size());
+      cell_item.graspCount = static_cast<int>(cell->grasp_space.size());
+      cell_item.responseTicks = cell->response_ticks;
+      cell_item.endTick = cell->end_tick;
+      cell_item.ooiType = cell->ooi_type_label;
+      cell_item.pushGoalType = cell->push_goal.type;
+      cell_item.mode = cell->current_mode();
+
+      for (const auto& summary : cell->push_db) {
+        PushabilitySnapshot push_item;
+        push_item.objectType = summary.object_type;
+        push_item.pushability = summary.pushability;
+        push_item.confidence = summary.confidence;
+        push_item.numTrials = summary.num_trials;
+        cell_item.pushDb.push_back(push_item);
+      }
+
+      size_t start = cell->conclusions.size() > kRecentConclusionLimit
+                         ? cell->conclusions.size() - kRecentConclusionLimit
+                         : 0;
+      for (size_t i = start; i < cell->conclusions.size(); i++) {
+        ConclusionSnapshot conclusion_item;
+        conclusion_item.actionName = cell->conclusions[i].action_name;
+        conclusion_item.objectType = cell->conclusions[i].object_type;
+        conclusion_item.subject = cell->conclusions[i].subject;
+        conclusion_item.result = cell->conclusions[i].result;
+        cell_item.recentConclusions.push_back(conclusion_item);
+      }
+
+      snap.cells.push_back(cell_item);
+    } else if (object->type == "food") {
+      snap.food.push_back(item);
+    } else if (object->type == "barrier") {
+      snap.barriers.push_back(item);
+    }
   }
 
   return snap;

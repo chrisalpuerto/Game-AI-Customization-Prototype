@@ -17,6 +17,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/behavior_driven_cells_parity_tests.dir/parity_tests.cpp.o.d"
   "CMakeFiles/behavior_driven_cells_parity_tests.dir/particle.cpp.o"
   "CMakeFiles/behavior_driven_cells_parity_tests.dir/particle.cpp.o.d"
+  "CMakeFiles/behavior_driven_cells_parity_tests.dir/snapshot_json.cpp.o"
+  "CMakeFiles/behavior_driven_cells_parity_tests.dir/snapshot_json.cpp.o.d"
   "CMakeFiles/behavior_driven_cells_parity_tests.dir/world.cpp.o"
   "CMakeFiles/behavior_driven_cells_parity_tests.dir/world.cpp.o.d"
   "behavior_driven_cells_parity_tests"

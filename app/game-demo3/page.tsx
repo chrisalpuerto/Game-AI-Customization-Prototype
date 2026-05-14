@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import MiniDashboard from "../components/mini-dashboard";
 
 const WS_URL = process.env.NEXT_PUBLIC_SIM_WS_URL ?? "ws://127.0.0.1:5001";
 const GRID_SPACING = 32;
@@ -8,6 +9,16 @@ const CONE_LENGTH = 520;
 const CONE_HALF_ANGLE = 50 * (Math.PI / 180);
 
 type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
+type LauncherState = "idle" | "starting" | "started" | "failed";
+type CellMode =
+  | "analyzing"
+  | "observing"
+  | "pushing"
+  | "food_grasp"
+  | "seeking_food"
+  | "turning"
+  | "exploring"
+  | "idle";
 
 type SnapshotEntity = {
   id: number;
@@ -19,10 +30,49 @@ type SnapshotEntity = {
   alive: boolean;
 };
 
+type SnapshotPushDbRow = {
+  objectType: string;
+  pushability: number;
+  confidence: number;
+  numTrials: number;
+};
+
+type SnapshotConclusion = {
+  actionName: string;
+  objectType: string;
+  subject: string;
+  result: string[];
+};
+
+type SnapshotCell = SnapshotEntity & {
+  energy: number;
+  hungry: boolean;
+  feedMode: boolean;
+  bored: boolean;
+  explore: boolean;
+  busy: boolean;
+  pursuingFood: boolean;
+  foodWithinGrasp: boolean;
+  pursuingPush: boolean;
+  pushWithinGrasp: boolean;
+  doObserve: boolean;
+  analyzeObservation: boolean;
+  confused: boolean;
+  awarenessCount: number;
+  graspCount: number;
+  responseTicks: number;
+  endTick: number;
+  ooiType: string;
+  pushGoalType: string;
+  mode: CellMode;
+  pushDb: SnapshotPushDbRow[];
+  recentConclusions: SnapshotConclusion[];
+};
+
 type SnapshotWorld = {
   width: number;
   height: number;
-  cells: SnapshotEntity[];
+  cells: SnapshotCell[];
   food: SnapshotEntity[];
   barriers: SnapshotEntity[];
 };
@@ -161,6 +211,82 @@ function drawCell(
   ctx.stroke();
 }
 
+function getHighlightedCell(world: SnapshotWorld) {
+  return world.cells.length > 1 ? world.cells[1] : world.cells[0] ?? null;
+}
+
+function getSecondaryCell(world: SnapshotWorld) {
+  const highlighted = getHighlightedCell(world);
+  if (!highlighted) return null;
+  return world.cells.find((cell) => cell.id !== highlighted.id) ?? null;
+}
+
+function renderCellDebugPanel(
+  cell: SnapshotCell,
+  title: string,
+  side: "left" | "right",
+) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        [side]: 18,
+        bottom: 18,
+        zIndex: 20,
+        width: 320,
+        maxHeight: "48vh",
+        overflowY: "auto",
+        padding: "12px 14px",
+        borderRadius: 12,
+        color: "#f6efcf",
+        background: "rgba(40, 22, 5, 0.68)",
+        border: "1px solid rgba(247, 232, 140, 0.18)",
+        fontFamily: "var(--font-geist-mono), monospace",
+        fontSize: 12,
+        lineHeight: 1.6,
+        letterSpacing: "0.03em",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+      }}
+    >
+      <div style={{ fontWeight: 700, marginBottom: 8 }}>{title} {cell.id}</div>
+      <div>MODE {cell.mode.toUpperCase()}</div>
+      <div>ENERGY {cell.energy.toFixed(0)}</div>
+      <div>HUNGRY {cell.hungry ? "YES" : "NO"}</div>
+      <div>FLAGS FEED:{cell.feedMode ? "1" : "0"} BORED:{cell.bored ? "1" : "0"} EXPLORE:{cell.explore ? "1" : "0"}</div>
+      <div>FLAGS FOOD:{cell.pursuingFood ? "1" : "0"} GRASP:{cell.foodWithinGrasp ? "1" : "0"}</div>
+      <div>FLAGS PUSH:{cell.pursuingPush ? "1" : "0"} PGRASP:{cell.pushWithinGrasp ? "1" : "0"}</div>
+      <div>FLAGS OBS:{cell.doObserve ? "1" : "0"} ANA:{cell.analyzeObservation ? "1" : "0"} CONF:{cell.confused ? "1" : "0"}</div>
+      <div>COUNTS AWARE:{cell.awarenessCount} GRASP:{cell.graspCount}</div>
+      <div>TICKS {cell.responseTicks}/{cell.endTick}</div>
+      <div>OOI {cell.ooiType || "-"}</div>
+      <div>PUSH GOAL {cell.pushGoalType || "-"}</div>
+
+      <div style={{ marginTop: 10, fontWeight: 700 }}>PUSH DB</div>
+      {cell.pushDb.length === 0 ? (
+        <div>none yet</div>
+      ) : (
+        cell.pushDb.map((entry) => (
+          <div key={entry.objectType}>
+            {entry.objectType.toUpperCase()} P:{entry.pushability.toFixed(2)} C:{entry.confidence.toFixed(2)} N:{entry.numTrials}
+          </div>
+        ))
+      )}
+
+      <div style={{ marginTop: 10, fontWeight: 700 }}>RECENT CONCLUSIONS</div>
+      {cell.recentConclusions.length === 0 ? (
+        <div>none yet</div>
+      ) : (
+        cell.recentConclusions.map((conclusion, index) => (
+          <div key={`${conclusion.objectType}-${index}`} style={{ marginTop: 4 }}>
+            {conclusion.subject} {conclusion.actionName} {conclusion.objectType} {"->"} {conclusion.result.join(", ")}
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 function renderWorld(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, world: SnapshotWorld) {
   const width = canvas.width;
   const height = canvas.height;
@@ -182,7 +308,7 @@ function renderWorld(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, w
     drawFood(ctx, food, sx, sy);
   }
 
-  const highlightedCellId = world.cells.length > 1 ? world.cells[1].id : world.cells[0]?.id;
+  const highlightedCellId = getHighlightedCell(world)?.id;
   for (const cell of world.cells) {
     drawCell(ctx, cell, sx, sy, cell.id === highlightedCellId);
   }
@@ -193,10 +319,18 @@ export default function GameDemo3Page() {
   const worldRef = useRef<SnapshotWorld | null>(null);
   const animationRef = useRef<number | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
+  const reconnectTimerRef = useRef<number | null>(null);
 
+  const [dashOpen, setDashOpen] = useState(true);
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
+  const [launcherState, setLauncherState] = useState<LauncherState>("idle");
+  const [launcherMessage, setLauncherMessage] = useState("");
+  const [connectionNonce, setConnectionNonce] = useState(0);
   const [time, setTime] = useState(0);
   const [counts, setCounts] = useState({ cells: 0, food: 0, barriers: 0 });
+  const [modeCounts, setModeCounts] = useState<Record<string, number>>({});
+  const [highlightedCell, setHighlightedCell] = useState<SnapshotCell | null>(null);
+  const [secondaryCell, setSecondaryCell] = useState<SnapshotCell | null>(null);
   const [hasSnapshot, setHasSnapshot] = useState(false);
 
   useEffect(() => {
@@ -216,13 +350,36 @@ export default function GameDemo3Page() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    if (reconnectTimerRef.current !== null) {
+      window.clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+
     try {
       const socket = new WebSocket(WS_URL);
       socketRef.current = socket;
 
-      socket.onopen = () => setStatus("connected");
-      socket.onerror = () => setStatus("error");
-      socket.onclose = () => setStatus("disconnected");
+      socket.onopen = () => {
+        if (cancelled) return;
+        setStatus("connected");
+        setLauncherState((current) => (current === "starting" ? "started" : current));
+        setLauncherMessage("");
+      };
+
+      socket.onerror = () => {
+        if (cancelled) return;
+        setStatus("error");
+      };
+
+      socket.onclose = () => {
+        if (cancelled) return;
+        setStatus("disconnected");
+        reconnectTimerRef.current = window.setTimeout(() => {
+          setConnectionNonce((value) => value + 1);
+        }, 1500);
+      };
 
       socket.onmessage = (event) => {
         try {
@@ -237,12 +394,25 @@ export default function GameDemo3Page() {
             food: message.world.food.length,
             barriers: message.world.barriers.length,
           });
+          setHighlightedCell(getHighlightedCell(message.world));
+          setSecondaryCell(getSecondaryCell(message.world));
+          setModeCounts(
+            message.world.cells.reduce<Record<string, number>>((acc, cell) => {
+              acc[cell.mode] = (acc[cell.mode] ?? 0) + 1;
+              return acc;
+            }, {}),
+          );
         } catch {
           // Ignore malformed packets.
         }
       };
 
       return () => {
+        cancelled = true;
+        if (reconnectTimerRef.current !== null) {
+          window.clearTimeout(reconnectTimerRef.current);
+          reconnectTimerRef.current = null;
+        }
         socketRef.current = null;
         socket.close();
       };
@@ -250,7 +420,39 @@ export default function GameDemo3Page() {
       const timeoutId = window.setTimeout(() => setStatus("error"), 0);
       return () => window.clearTimeout(timeoutId);
     }
-  }, []);
+  }, [connectionNonce]);
+
+  const handleStartServer = async () => {
+    if (launcherState === "starting") {
+      return;
+    }
+
+    setLauncherState("starting");
+    setLauncherMessage("Launching local simulation server...");
+
+    try {
+      const response = await fetch("/api/sim/start", {
+        method: "POST",
+      });
+      const payload = (await response.json()) as {
+        ok: boolean;
+        alreadyRunning?: boolean;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error ?? "Unable to start simulation server.");
+      }
+
+      setLauncherState("started");
+      setLauncherMessage(payload.alreadyRunning ? "Simulation server already running." : "Simulation server started.");
+      setStatus("connecting");
+      setConnectionNonce((value) => value + 1);
+    } catch (error) {
+      setLauncherState("failed");
+      setLauncherMessage(error instanceof Error ? error.message : "Unable to start simulation server.");
+    }
+  };
 
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -346,8 +548,23 @@ export default function GameDemo3Page() {
         <div>CELLS {counts.cells}</div>
         <div>FOOD {counts.food}</div>
         <div>BARRIERS {counts.barriers}</div>
+        {Object.entries(modeCounts).length > 0 ? (
+          <div style={{ marginTop: 6 }}>
+            {Object.entries(modeCounts)
+              .sort(([left], [right]) => left.localeCompare(right))
+              .map(([mode, count]) => (
+                <div key={mode}>
+                  {mode.toUpperCase()} {count}
+                </div>
+              ))}
+          </div>
+        ) : null}
         <div>CLICK TO PLACE FOOD</div>
+        {launcherMessage ? <div style={{ marginTop: 6, maxWidth: 320 }}>{launcherMessage}</div> : null}
       </div>
+
+      {secondaryCell ? renderCellDebugPanel(secondaryCell, "HIGHLIGHTED CELL", "left") : null}
+      {highlightedCell ? renderCellDebugPanel(highlightedCell, "HIGHLIGHTED CELL", "right") : null}
 
       {status !== "connected" && !hasSnapshot && (
         <div
@@ -364,8 +581,61 @@ export default function GameDemo3Page() {
             letterSpacing: "0.05em",
           }}
         >
-          Waiting for simulation server at {WS_URL}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 14,
+            }}
+          >
+            <div>Waiting for simulation server at {WS_URL}</div>
+            <button
+              onClick={handleStartServer}
+              disabled={launcherState === "starting"}
+              style={{
+                padding: "12px 18px",
+                borderRadius: 999,
+                border: "1px solid rgba(247, 232, 140, 0.28)",
+                background: launcherState === "starting" ? "rgba(83, 57, 18, 0.75)" : "rgba(122, 74, 20, 0.9)",
+                color: "#f6efcf",
+                fontFamily: "var(--font-geist-mono), monospace",
+                fontSize: 12,
+                letterSpacing: "0.06em",
+                cursor: launcherState === "starting" ? "wait" : "pointer",
+              }}
+            >
+              {launcherState === "starting" ? "STARTING LOCAL SERVER..." : "START LOCAL SERVER"}
+            </button>
+          </div>
         </div>
+      )}
+
+      <MiniDashboard open={dashOpen} onClose={() => setDashOpen(false)} />
+
+      {!dashOpen && (
+        <button
+          onClick={() => setDashOpen(true)}
+          style={{
+            position: "fixed",
+            top: 18,
+            right: 18,
+            zIndex: 20,
+            padding: "10px 14px",
+            borderRadius: 10,
+            color: "#f6efcf",
+            background: "rgba(40, 22, 5, 0.58)",
+            border: "1px solid rgba(247, 232, 140, 0.18)",
+            fontFamily: "var(--font-geist-mono), monospace",
+            fontSize: 12,
+            letterSpacing: "0.04em",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+            cursor: "pointer",
+          }}
+        >
+          Open Mini Dashboard
+        </button>
       )}
     </div>
   );

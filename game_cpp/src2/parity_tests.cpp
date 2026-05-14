@@ -1,10 +1,12 @@
 #include "barrier.h"
 #include "cell.h"
 #include "land.h"
+#include "snapshot_json.h"
 #include "world.h"
 
 #include <cmath>
 #include <iostream>
+#include <string>
 
 namespace {
 
@@ -120,6 +122,125 @@ bool test_cell_barrier_response() {
   return true;
 }
 
+bool test_cell_push_observe_learning() {
+  World world(8, 8, 1280, 720, 0.1f);
+  Cell* cell = world.spawn_cell({200, 200}, 1);
+  Food* food = world.spawn_food({225, 200}, false);
+
+  cell->energy = 16000.0f;
+  cell->hungry = false;
+  cell->bored = true;
+  cell->feed_mode = false;
+  cell->explore = true;
+
+  bool saw_pushing = false;
+  for (int i = 0; i < 80; i++) {
+    world.simulate_world(0.1f);
+    saw_pushing = saw_pushing || cell->pursuing_push || cell->push_within_grasp;
+    if (saw_pushing) {
+      break;
+    }
+  }
+
+  if (!saw_pushing) {
+    std::cerr << "Non-hungry cell never entered push behavior\n";
+    return false;
+  }
+
+  cell->pursuing_push = false;
+  cell->push_within_grasp = true;
+  cell->explore = false;
+  cell->bored = false;
+  cell->push_goal.entity = food;
+  cell->push_goal.type = "food";
+  cell->push_goal.distance = 10.0f;
+
+  bool saw_observing = false;
+  bool saw_analyzing = false;
+  for (int i = 0; i < 220; i++) {
+    world.simulate_world(0.1f);
+    saw_observing = saw_observing || cell->do_observe;
+    saw_analyzing = saw_analyzing || cell->analyze_observation;
+    if (!cell->push_db.empty() && !cell->conclusions.empty()) {
+      break;
+    }
+  }
+
+  if (!saw_observing) {
+    std::cerr << "Cell never entered observe mode after push\n";
+    return false;
+  }
+  if (!saw_analyzing && cell->conclusions.empty()) {
+    std::cerr << "Cell never analyzed observations into conclusions\n";
+    return false;
+  }
+  if (cell->push_db.empty()) {
+    std::cerr << "Cell did not learn any pushability summary\n";
+    return false;
+  }
+  if (cell->push_db.front().num_trials <= 0 || cell->push_db.front().confidence <= 0.0f) {
+    std::cerr << "Push DB did not record valid trials/confidence\n";
+    return false;
+  }
+  if (cell->conclusions.empty()) {
+    std::cerr << "Cell did not produce conclusions from observations\n";
+    return false;
+  }
+
+  return true;
+}
+
+bool test_snapshot_debug_fields() {
+  World world(8, 8, 1280, 720, 0.1f);
+  Cell* cell = world.spawn_cell({200, 200}, 1);
+  cell->energy = 16000.0f;
+  cell->hungry = false;
+  cell->pursuing_push = true;
+  cell->push_goal.type = "food";
+  cell->ooi_type_label = "food";
+  cell->do_observe = true;
+
+  PushabilitySummary summary;
+  summary.object_type = "food";
+  summary.pushability = 0.75f;
+  summary.confidence = 0.25f;
+  summary.num_trials = 25;
+  cell->push_db.push_back(summary);
+
+  Conclusion conclusion;
+  conclusion.action_name = "push";
+  conclusion.object_type = "food";
+  conclusion.subject = "I";
+  conclusion.result.push_back("to move");
+  cell->conclusions.push_back(conclusion);
+
+  const WorldSnapshot snapshot = world.snapshot();
+  if (snapshot.cells.empty()) {
+    std::cerr << "Snapshot did not include cells\n";
+    return false;
+  }
+
+  const auto& snap_cell = snapshot.cells.front();
+  if (snap_cell.mode.empty() || snap_cell.pushDb.empty() || snap_cell.recentConclusions.empty()) {
+    std::cerr << "Snapshot missing debug cognition fields\n";
+    return false;
+  }
+  if (snap_cell.ooiType != "food" || snap_cell.pushGoalType != "food") {
+    std::cerr << "Snapshot target labels are incorrect\n";
+    return false;
+  }
+
+  const std::string json = snapshot_to_json(snapshot);
+  if (json.find("\"mode\":\"") == std::string::npos ||
+      json.find("\"pushDb\":") == std::string::npos ||
+      json.find("\"recentConclusions\":") == std::string::npos) {
+    std::cerr << "Snapshot JSON missing expected debug keys\n";
+    return false;
+  }
+
+  return true;
+}
+
 }  // namespace
 
 int main() {
@@ -127,6 +248,8 @@ int main() {
   if (!test_land_behavior()) return 1;
   if (!test_cell_food_seek_and_eat()) return 1;
   if (!test_cell_barrier_response()) return 1;
+  if (!test_cell_push_observe_learning()) return 1;
+  if (!test_snapshot_debug_fields()) return 1;
 
   std::cout << "All parity tests passed.\n";
   return 0;
