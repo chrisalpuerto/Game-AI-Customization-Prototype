@@ -25,19 +25,16 @@ void land::change_moisture(float delta) {
 }
 
 void land::calculate_temperature(float time) {
-  temperature = mid_temp + temp_radius * std::sin(time / 20.0f);
+  temperature = mid_temp + temp_radius * std::sin(time);
   temperature = std::clamp(temperature, 0.0f, static_cast<float>(MAX_TEMPERATURE));
 }
 
 void land::calculate_fertility() {
   float nutrient_score = nutrient_level / MAX_NUTRIENTS;
   float moisture_score = moisture_level / MAX_MOISTURE;
-  float sunlight_score = sunlight / 100.0f;
-  float temperature_score = 1.0f - std::abs(50.0f - temperature) / 50.0f;
-  fertility = std::clamp((nutrient_score + moisture_score + sunlight_score + temperature_score) / 4.0f, 0.0f, 1.0f);
+  fertility = std::clamp((nutrient_score + moisture_score) / 2.0f, 0.0f, 1.0f);
 }
 
 bool land::point_in_land(SimPoint pt) {
   return PtInRectPortable(&brc, pt);
 }
-

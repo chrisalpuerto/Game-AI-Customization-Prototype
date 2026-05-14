@@ -6,7 +6,5 @@ CXX_DEFINES = -DBOOST_ERROR_CODE_HEADER_ONLY
 
 CXX_INCLUDES = -I/opt/homebrew/include
 
-CXX_FLAGSarm64 = -std=gnu++17 -arch arm64
-
-CXX_FLAGS = -std=gnu++17 -arch arm64
+CXX_FLAGS = -std=gnu++17
 

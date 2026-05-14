@@ -53,12 +53,37 @@ void Cell::move_forward(float force) {
 }
 
 void Cell::face_point(const myPoint& p) {
-  Vector to_point = p.SubtractPointFromPoint(&part_loc);
-  if (to_point.get_size() <= 0.001f) {
+  Vector stri_h = sight_dir.MultiplyVectorByScalar(static_cast<float>(sight_height));
+  Vector v_obj = p.SubtractPointFromPoint(&part_loc);
+  v_obj.tuple[1] *= -1;
+  stri_h.tuple[1] *= -1;
+
+  float dist_to_obj = v_obj.get_size();
+  if (dist_to_obj <= 0.001f) {
     return;
   }
-  to_point.make_unit();
-  sight_dir = to_point;
+
+  float dot = v_obj.DotProduct(&stri_h);
+  float cos_phi = dot / static_cast<float>(sight_height) / dist_to_obj;
+  cos_phi = std::clamp(cos_phi, -1.0f, 1.0f);
+  if (std::abs(1.0f - cos_phi) < 0.0001f) {
+    cos_phi = 1.0f;
+  }
+
+  float phi = std::acos(cos_phi) * 180.0f / 3.14159f;
+  float alpha_vobj = v_obj.get_angle();
+  float alpha_vsight = stri_h.get_angle();
+  float diff = (alpha_vsight - alpha_vobj) * 180.0f / 3.14159f;
+
+  if (static_cast<int>(std::abs(diff) * 10) <= static_cast<int>(phi * 10)) {
+    if (diff > 0) {
+      phi *= -1;
+    }
+  } else if (diff < 0) {
+    phi *= -1;
+  }
+
+  rotate_eyes(-1.0f * phi);
 }
 
 void Cell::see(World& world) {
@@ -99,6 +124,21 @@ void Cell::see(World& world) {
   std::sort(awareness.begin(), awareness.end(), [](const PerceptualObject& a, const PerceptualObject& b) {
     return a.distance < b.distance;
   });
+
+  Vector stri_h = sight_dir.MultiplyVectorByScalar(static_cast<float>(sight_height));
+  const myPoint sight_tip = part_loc.AddVectorToPoint(&stri_h);
+  const SimPoint tip{
+    static_cast<int>(sight_tip.tuple[0]),
+    static_cast<int>(sight_tip.tuple[1]),
+  };
+
+  if (!PtInRectPortable(&world.brc, tip)) {
+    near_barrier = true;
+    see_barrier = true;
+  } else {
+    near_barrier = false;
+    see_barrier = false;
+  }
 }
 
 void Cell::try_eat(Entity* object) {
@@ -126,6 +166,7 @@ void Cell::clear_thinking() {
   food_within_grasp = false;
   explore = true;
   feed_mode = false;
+  bored = false;
   turn_maneuver = false;
   busy = false;
 }
@@ -135,6 +176,7 @@ void Cell::clear_thinkingB() {
   food_within_grasp = false;
   explore = false;
   feed_mode = false;
+  bored = false;
 }
 
 void Cell::turn_shift(int ticks) {
@@ -146,16 +188,18 @@ void Cell::turn_shift(int ticks) {
 }
 
 void Cell::mind_set(World& world) {
-  const Vector future_dx = vel * 16.65f;
-  const myPoint future_point = part_loc.AddVectorToPoint(&future_dx);
-  const SimPoint future_view{
-    static_cast<int>(future_point.tuple[0]),
-    static_cast<int>(future_point.tuple[1]),
-  };
+  if (see_barrier && keep_distance_to_barrier) {
+    const Vector future_dx = vel * 16.65f;
+    const myPoint future_point = part_loc.AddVectorToPoint(&future_dx);
+    const SimPoint future_view{
+      static_cast<int>(future_point.tuple[0]),
+      static_cast<int>(future_point.tuple[1]),
+    };
 
-  if (!PtInRectPortable(&world.brc, future_view)) {
     clear_thinkingB();
-    turn_shift(20);
+    if (!PtInRectPortable(&world.brc, future_view)) {
+      turn_shift(20);
+    }
   }
 
   if (hungry) {
@@ -184,6 +228,8 @@ void Cell::simulate(World& world, float dt) {
         response_ticks = 0;
         responding_to_barrier = false;
       }
+    } else if (near_barrier) {
+      turn_shift(20);
     }
   }
 
@@ -245,11 +291,6 @@ void Cell::simulate(World& world, float dt) {
           busy = false;
         }
       } else {
-        wander_turn_cooldown -= dt;
-        if (wander_turn_cooldown <= 0) {
-          rotate_eyes(35);
-          wander_turn_cooldown = 3.0f;
-        }
         move_forward(100);
         bored = true;
       }

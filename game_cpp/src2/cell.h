@@ -34,6 +34,9 @@ public:
   bool hit_barrier = false;
   bool responding_to_barrier = false;
   bool turn_maneuver = false;
+  bool near_barrier = false;
+  bool see_barrier = false;
+  bool keep_distance_to_barrier = true;
   bool busy = false;
   int response_ticks = 0;
   int end_tick = 0;

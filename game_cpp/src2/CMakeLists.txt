@@ -19,6 +19,19 @@ add_executable(behavior_driven_cells_headless
   world.cpp
 )
 
+add_executable(behavior_driven_cells_parity_tests
+  parity_tests.cpp
+  Vector.cpp
+  myPoint.cpp
+  myMatrix.cpp
+  particle.cpp
+  land.cpp
+  food.cpp
+  barrier.cpp
+  cell.cpp
+  world.cpp
+)
+
 find_path(BOOST_INCLUDE_DIR boost/beast/core.hpp
   HINTS
     /opt/homebrew/include

@@ -36,17 +36,42 @@ float Barrier::getDerivative(float x) const {
 }
 
 bool Barrier::isCollision(SimPoint test_pt) const {
-  float local_x = static_cast<float>(test_pt.x - view_loc.x);
-  if (local_x < xmin || local_x > xmax) {
+  SimPoint test_pt_prime;
+  test_pt_prime.x = test_pt.x - view_loc.x;
+  test_pt_prime.y = test_pt.y - view_loc.y;
+
+  SimPoint curve_pt;
+  bool found = false;
+
+  const float prec = 0.1f;
+  for (float x = xmin; x < xmax; x += prec) {
+    float dydx = getDerivative(x);
+    float y = f_of_x(x);
+
+    float denom = y - static_cast<float>(test_pt_prime.y);
+    if (std::abs(denom) <= 0.0001f) {
+      continue;
+    }
+
+    float diff = dydx + (x - static_cast<float>(test_pt_prime.x)) / denom;
+    if (std::abs(diff) < 0.1f) {
+      curve_pt.x = static_cast<int>(x);
+      curve_pt.y = static_cast<int>(y);
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) {
     return false;
   }
 
-  float curve_y = f_of_x(local_x);
-  float local_y = static_cast<float>(test_pt.y - view_loc.y);
-  return std::abs(local_y - curve_y) <= padding;
+  float dx = static_cast<float>(curve_pt.x - test_pt_prime.x);
+  float dy = static_cast<float>(curve_pt.y - test_pt_prime.y);
+  float dist = std::sqrt(dx * dx + dy * dy);
+  return dist <= static_cast<float>(padding);
 }
 
 void Barrier::tick(float) {
   sync_view_loc();
 }
-

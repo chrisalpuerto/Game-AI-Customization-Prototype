@@ -43,6 +43,13 @@ void RainBox::calculate_rain(float time, float world_width, float world_height) 
   magnitude = max_magnitude * prop;
 }
 
+void RainBox::init_rain(int x, int y) {
+  top_left.x = x;
+  top_left.y = y;
+  SetRectPortable(&brc, top_left.x, top_left.y, top_left.x + static_cast<int>(rain_width),
+                  top_left.y + static_cast<int>(rain_height));
+}
+
 bool RainBox::inBox(SimPoint pt) const {
   return PtInRectPortable(&brc, pt);
 }
@@ -129,6 +136,12 @@ void World::simulate_land() {
 
     if (RectsOverlapPortable(rain.brc, land_plots[i].brc)) {
       land_plots[i].change_moisture(rain.magnitude);
+    }
+
+    for (const auto& extra_rain : rains) {
+      if (RectsOverlapPortable(extra_rain.brc, land_plots[i].brc)) {
+        land_plots[i].change_moisture(extra_rain.magnitude);
+      }
     }
 
     if (land_plots[i].temperature > 70) {

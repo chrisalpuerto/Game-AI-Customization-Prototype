@@ -64,11 +64,13 @@ CMAKE_BINARY_DIR = /Users/chrisalpuerto/Desktop/PROJECTS/cpsc490-ui-prototype/ga
 
 # The main recursive "all" target.
 all: CMakeFiles/behavior_driven_cells_headless.dir/all
+all: CMakeFiles/behavior_driven_cells_parity_tests.dir/all
 all: CMakeFiles/behavior_driven_cells_ws.dir/all
 .PHONY : all
 
 # The main recursive "codegen" target.
 codegen: CMakeFiles/behavior_driven_cells_headless.dir/codegen
+codegen: CMakeFiles/behavior_driven_cells_parity_tests.dir/codegen
 codegen: CMakeFiles/behavior_driven_cells_ws.dir/codegen
 .PHONY : codegen
 
@@ -78,6 +80,7 @@ preinstall:
 
 # The main recursive "clean" target.
 clean: CMakeFiles/behavior_driven_cells_headless.dir/clean
+clean: CMakeFiles/behavior_driven_cells_parity_tests.dir/clean
 clean: CMakeFiles/behavior_driven_cells_ws.dir/clean
 .PHONY : clean
 
@@ -114,13 +117,45 @@ CMakeFiles/behavior_driven_cells_headless.dir/clean:
 .PHONY : CMakeFiles/behavior_driven_cells_headless.dir/clean
 
 #=============================================================================
+# Target rules for target CMakeFiles/behavior_driven_cells_parity_tests.dir
+
+# All Build rule for target.
+CMakeFiles/behavior_driven_cells_parity_tests.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/behavior_driven_cells_parity_tests.dir/build.make CMakeFiles/behavior_driven_cells_parity_tests.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/behavior_driven_cells_parity_tests.dir/build.make CMakeFiles/behavior_driven_cells_parity_tests.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/chrisalpuerto/Desktop/PROJECTS/cpsc490-ui-prototype/game_cpp/src2/build/CMakeFiles --progress-num=12,13,14,15,16,17,18,19,20,21,22 "Built target behavior_driven_cells_parity_tests"
+.PHONY : CMakeFiles/behavior_driven_cells_parity_tests.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/behavior_driven_cells_parity_tests.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/chrisalpuerto/Desktop/PROJECTS/cpsc490-ui-prototype/game_cpp/src2/build/CMakeFiles 11
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/behavior_driven_cells_parity_tests.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/chrisalpuerto/Desktop/PROJECTS/cpsc490-ui-prototype/game_cpp/src2/build/CMakeFiles 0
+.PHONY : CMakeFiles/behavior_driven_cells_parity_tests.dir/rule
+
+# Convenience name for target.
+behavior_driven_cells_parity_tests: CMakeFiles/behavior_driven_cells_parity_tests.dir/rule
+.PHONY : behavior_driven_cells_parity_tests
+
+# codegen rule for target.
+CMakeFiles/behavior_driven_cells_parity_tests.dir/codegen:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/behavior_driven_cells_parity_tests.dir/build.make CMakeFiles/behavior_driven_cells_parity_tests.dir/codegen
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/chrisalpuerto/Desktop/PROJECTS/cpsc490-ui-prototype/game_cpp/src2/build/CMakeFiles --progress-num=12,13,14,15,16,17,18,19,20,21,22 "Finished codegen for target behavior_driven_cells_parity_tests"
+.PHONY : CMakeFiles/behavior_driven_cells_parity_tests.dir/codegen
+
+# clean rule for target.
+CMakeFiles/behavior_driven_cells_parity_tests.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/behavior_driven_cells_parity_tests.dir/build.make CMakeFiles/behavior_driven_cells_parity_tests.dir/clean
+.PHONY : CMakeFiles/behavior_driven_cells_parity_tests.dir/clean
+
+#=============================================================================
 # Target rules for target CMakeFiles/behavior_driven_cells_ws.dir
 
 # All Build rule for target.
 CMakeFiles/behavior_driven_cells_ws.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/behavior_driven_cells_ws.dir/build.make CMakeFiles/behavior_driven_cells_ws.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/behavior_driven_cells_ws.dir/build.make CMakeFiles/behavior_driven_cells_ws.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/chrisalpuerto/Desktop/PROJECTS/cpsc490-ui-prototype/game_cpp/src2/build/CMakeFiles --progress-num=12,13,14,15,16,17,18,19,20,21,22,23 "Built target behavior_driven_cells_ws"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/chrisalpuerto/Desktop/PROJECTS/cpsc490-ui-prototype/game_cpp/src2/build/CMakeFiles --progress-num=23,24,25,26,27,28,29,30,31,32,33,34 "Built target behavior_driven_cells_ws"
 .PHONY : CMakeFiles/behavior_driven_cells_ws.dir/all
 
 # Build rule for subdir invocation for target.
@@ -137,7 +172,7 @@ behavior_driven_cells_ws: CMakeFiles/behavior_driven_cells_ws.dir/rule
 # codegen rule for target.
 CMakeFiles/behavior_driven_cells_ws.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/behavior_driven_cells_ws.dir/build.make CMakeFiles/behavior_driven_cells_ws.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/chrisalpuerto/Desktop/PROJECTS/cpsc490-ui-prototype/game_cpp/src2/build/CMakeFiles --progress-num=12,13,14,15,16,17,18,19,20,21,22,23 "Finished codegen for target behavior_driven_cells_ws"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/chrisalpuerto/Desktop/PROJECTS/cpsc490-ui-prototype/game_cpp/src2/build/CMakeFiles --progress-num=23,24,25,26,27,28,29,30,31,32,33,34 "Finished codegen for target behavior_driven_cells_ws"
 .PHONY : CMakeFiles/behavior_driven_cells_ws.dir/codegen
 
 # clean rule for target.

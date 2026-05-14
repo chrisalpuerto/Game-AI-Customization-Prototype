@@ -34,6 +34,7 @@ struct RainBox {
   int max_magnitude = 100;
 
   void calculate_rain(float time, float world_width, float world_height);
+  void init_rain(int x, int y);
   bool inBox(SimPoint pt) const;
 };
 
@@ -82,6 +83,7 @@ public:
   std::vector<land> land_plots;
   WindBox wind;
   RainBox rain;
+  std::vector<RainBox> rains;
   SunBox sun;
   std::vector<std::unique_ptr<Entity>> objects;
   std::vector<Barrier*> barriers;
