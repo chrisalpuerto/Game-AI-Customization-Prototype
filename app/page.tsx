@@ -286,6 +286,160 @@ function Tabs({ items, active, onChange }: TabsProps) {
   );
 }
 
+/* ---------- Animation library ---------- */
+interface AnimEntry { id: string; name: string; icon: React.ReactNode; cat: string; dur: string; desc: string; }
+const ANIM_DATA: AnimEntry[] = [
+  { id: "idle-std", name: "Idle — Standard",  icon: I.scout,  cat: "Locomotion", dur: "loop",  desc: "Neutral standing idle with subtle weight shift." },
+  { id: "walk",     name: "Walk Cycle",        icon: I.rush,   cat: "Locomotion", dur: "loop",  desc: "Full walk loop, blends with run at threshold." },
+  { id: "sprint",   name: "Combat Sprint",     icon: I.rush,   cat: "Locomotion", dur: "loop",  desc: "Weapon-raised sprint, compressed stride." },
+  { id: "wounded",  name: "Wounded Walk",      icon: I.shield, cat: "Locomotion", dur: "loop",  desc: "Limping gait triggered below 30% health." },
+  { id: "draw",     name: "Draw Weapon",       icon: I.play,   cat: "Combat",     dur: "0.6 s", desc: "Holster-to-aim transition, right-hand draw." },
+  { id: "cover",    name: "Take Cover",        icon: I.shield, cat: "Combat",     dur: "0.8 s", desc: "Low crouch slide into wall/pillar cover." },
+  { id: "peek",     name: "Peek & Fire",       icon: I.scout,  cat: "Combat",     dur: "1.4 s", desc: "Lean out, aim, return — cover-bound." },
+  { id: "melee",    name: "Melee Strike",      icon: I.rush,   cat: "Combat",     dur: "0.5 s", desc: "Right-hook punch, interrupts weapon anim." },
+  { id: "reload",   name: "Reload — Rifle",    icon: I.reset,  cat: "Combat",     dur: "2.1 s", desc: "Full mag swap with bolt-charge finish." },
+  { id: "death",    name: "Death Fall",        icon: I.ghost,  cat: "Reaction",   dur: "1.8 s", desc: "Ragdoll-blend collapse, direction-aware." },
+  { id: "alert",    name: "Alert Scan",        icon: I.brain,  cat: "Reaction",   dur: "loop",  desc: "Head-sweep search behaviour, raised weapon." },
+  { id: "victory",  name: "Victory Stance",    icon: I.spark,  cat: "Social",     dur: "2.5 s", desc: "Post-kill taunt; plays once then idles." },
+];
+
+function AnimationTab() {
+  return (
+    <div className="tab-content">
+      <section className="section">
+        <div className="section-head">
+          <div className="section-num">12</div>
+          <div>
+            <h2 className="section-title">Animation Library</h2>
+            <p className="section-desc">Assign animations to this character&apos;s state machine. Drag to reorder priority.</p>
+          </div>
+          <div className="section-tools">
+            <button className="icon-btn">{I.reset}</button>
+            <button className="icon-btn">{I.more}</button>
+          </div>
+        </div>
+        <div className="preset-grid">
+          {ANIM_DATA.map(a => (
+            <button key={a.id} className="preset">
+              <div className="preset-icon">{a.icon}</div>
+              <div className="preset-name">{a.name}</div>
+              <div className="preset-desc">{a.desc}</div>
+              <div className="preset-spec">
+                <span className="spec-pill mono">{a.cat}</span>
+                <span className="spec-pill mono">{a.dur}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* ---------- Character roster ---------- */
+type CharStatus = "Active" | "Draft" | "Archived";
+interface CharEntry { id: string; name: string; role: string; faction: string; status: CharStatus; level: number; gradient: string; }
+const CHARACTER_DATA: CharEntry[] = [
+  { id: "wraith",    name: "Wraith",    role: "Heavy Operator · Boss",      faction: "CORE",   status: "Active",   level: 12, gradient: "linear-gradient(135deg,#1F1D19,#3D3A33), radial-gradient(circle at 70% 30%,#F4B58A 0%,transparent 50%)" },
+  { id: "phantom",   name: "Phantom",   role: "Ghost Agent",                 faction: "SHADOW", status: "Active",   level:  9, gradient: "linear-gradient(135deg,#1A1D2E,#2E3250)" },
+  { id: "ironclad",  name: "Ironclad",  role: "Shield Vanguard · Elite",     faction: "CORE",   status: "Active",   level: 11, gradient: "linear-gradient(135deg,#232323,#4A4A4A)" },
+  { id: "venom",     name: "Venom",     role: "Assassin",                    faction: "SHADOW", status: "Active",   level:  8, gradient: "linear-gradient(135deg,#1A2A1A,#2D4A2D)" },
+  { id: "blaze",     name: "Blaze",     role: "Pyromaniac · Demolitions",    faction: "ROGUE",  status: "Active",   level:  7, gradient: "linear-gradient(135deg,#3A1A0A,#6B2A14)" },
+  { id: "atlas",     name: "Atlas",     role: "Field Medic · Support",       faction: "CORE",   status: "Active",   level:  6, gradient: "linear-gradient(135deg,#0A2230,#1A4A6A)" },
+  { id: "rook",      name: "Rook",      role: "Recon Scout",                 faction: "CORE",   status: "Active",   level:  5, gradient: "linear-gradient(135deg,#2A2018,#5A4A30)" },
+  { id: "cipher",    name: "Cipher",    role: "Electronic Warfare",          faction: "TECH",   status: "Active",   level: 10, gradient: "linear-gradient(135deg,#0A1A2A,#0A3040)" },
+  { id: "sentinel",  name: "Sentinel",  role: "Perimeter Defender",          faction: "CORE",   status: "Active",   level:  6, gradient: "linear-gradient(135deg,#1A1820,#3A3450)" },
+  { id: "nova",      name: "Nova",      role: "Long-Range Sniper",           faction: "SHADOW", status: "Draft",    level:  4, gradient: "linear-gradient(135deg,#28202A,#503860)" },
+  { id: "ember",     name: "Ember",     role: "Patrol Grunt",                faction: "ROGUE",  status: "Active",   level:  2, gradient: "linear-gradient(135deg,#2A1810,#503020)" },
+  { id: "titan",     name: "Titan",     role: "Elite Guard · Boss",          faction: "CORE",   status: "Draft",    level: 13, gradient: "linear-gradient(135deg,#181818,#303030)" },
+  { id: "specter",   name: "Specter",   role: "Shadow Infiltrator",          faction: "SHADOW", status: "Active",   level:  9, gradient: "linear-gradient(135deg,#101018,#202038)" },
+  { id: "axiom",     name: "Axiom",     role: "AI Commander · Boss",         faction: "TECH",   status: "Draft",    level: 15, gradient: "linear-gradient(135deg,#0A1820,#103050)" },
+];
+
+function CharacterTab() {
+  return (
+    <div className="tab-content">
+      <section className="section">
+        <div className="section-head">
+          <div className="section-num">14</div>
+          <div>
+            <h2 className="section-title">All Characters</h2>
+            <p className="section-desc">Browse the full NPC roster. Select a character to configure its behavior profile.</p>
+          </div>
+        </div>
+        <div className="character-grid">
+          {CHARACTER_DATA.map(c => (
+            <div key={c.id} className="character-card">
+              <div className="char-card-portrait" style={{ background: c.gradient }} />
+              <div>
+                <div className="char-card-name">{c.name}</div>
+                <div className="char-card-role">{c.role}</div>
+              </div>
+              <div className="char-card-meta">
+                <span className={`char-card-badge${c.status === "Active" ? " active" : c.status === "Draft" ? " draft" : ""}`}>{c.status}</span>
+                <span className="char-card-badge mono">{c.faction}</span>
+                <span className="char-card-badge mono">Lv {c.level}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* ---------- Memory log ---------- */
+const MEMORY_LOG = [
+  { t: "00:14:32", tag: "PERCEPT", msg: "Detected hostile — distance 47 ft, bearing NW" },
+  { t: "00:14:35", tag: "COMBAT",  msg: "Engaged target: opened fire (3-round burst)" },
+  { t: "00:14:41", tag: "MOVE",    msg: "Advanced to cover — pillar C-4" },
+  { t: "00:14:48", tag: "PERCEPT", msg: "Lost visual on target" },
+  { t: "00:14:52", tag: "WAIT",    msg: "Holding position — threat status: unknown" },
+  { t: "00:15:01", tag: "PERCEPT", msg: "Re-acquired target — health estimate ~60%" },
+  { t: "00:15:04", tag: "COMBAT",  msg: "Called for backup on squad channel" },
+  { t: "00:15:09", tag: "MOVE",    msg: "Flanking maneuver — route via north corridor" },
+  { t: "00:15:18", tag: "COMBAT",  msg: "Target eliminated" },
+  { t: "00:15:19", tag: "MOVE",    msg: "Returning to patrol route" },
+  { t: "00:15:24", tag: "STATE",   msg: "Aggression scaled down — area clear" },
+  { t: "00:15:30", tag: "PERCEPT", msg: "Sound event detected — footsteps, ~80 ft NE" },
+];
+
+function MemoryTab() {
+  return (
+    <div className="tab-content">
+      <section className="section">
+        <div className="section-head">
+          <div className="section-num">01</div>
+          <div>
+            <h2 className="section-title">Character Memory Log</h2>
+            <p className="section-desc">Recorded perception and state events from the last sandbox session.</p>
+          </div>
+          <div className="section-tools">
+            <button className="pill-btn">{I.save}<span>Export .json</span></button>
+          </div>
+        </div>
+        <div className="upload-zone">
+          <div className="upload-zone-icon">{I.files}</div>
+          <div className="upload-zone-text">
+            <span className="upload-zone-label">Upload memory snapshot</span>
+            <span className="upload-zone-sub">Drop a .json file or click to browse</span>
+          </div>
+          <button className="pill-btn primary">Upload .json</button>
+        </div>
+        <div className="memory-log">
+          {MEMORY_LOG.map((e, i) => (
+            <div key={i} className="memory-entry">
+              <span className="memory-time mono">{e.t}</span>
+              <span className={"memory-tag mono " + e.tag.toLowerCase()}>{e.tag}</span>
+              <span className="memory-msg">{e.msg}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 /* ---------- Combat role presets ---------- */
 const PRESETS: Preset[] = [
   { id: "rusher",   name: "Aggressive Rusher",  icon: I.rush,   desc: "Closes distance fast. High aggression, low caution.", spec: ["AGGR 9.0", "CAUT 2.0", "RANGE -0.6"] },
@@ -317,6 +471,212 @@ function FloatingActionBar() {
           <polyline points="2,9 7,4 12,9" />
         </svg>
       </button>
+    </div>
+  );
+}
+
+/* ---------- Home ---------- */
+function HomeTab({ onNavigate }: { onNavigate: (t: string) => void }) {
+  const NAV_CARDS = [
+    { icon: I.bot,   title: "Characters", desc: "Browse and configure all 14 NPCs in the roster.",       badge: "14 NPCs",  action: () => onNavigate("Characters") },
+    { icon: I.brain, title: "Behavior",   desc: "Tune perception, aggression, and decision thresholds.",  badge: "Active",   action: () => onNavigate("Behavior")   },
+    { icon: I.play,  title: "Animation",  desc: "Assign motion clips to each character state.",           badge: "12 clips", action: () => onNavigate("Animation")  },
+    { icon: I.chart, title: "Memory Log", desc: "Inspect recorded events and upload memory snapshots.",   badge: null,       action: () => onNavigate("Memory")     },
+    { icon: I.cog,   title: "Settings",   desc: "Profile, preferences, API keys, and quick launch.",      badge: null,       action: () => onNavigate("Settings")   },
+  ];
+  const LAUNCH_CARDS = [
+    { icon: I.beaker, title: "Open Sandbox",  desc: "Interactive NPC test environment.",             href: "/sandbox"    },
+    { icon: I.ghost,  title: "Launch Game",   desc: "Latest build — boss encounter (Game Demo 3).", href: "/game-demo3" },
+    { icon: I.spark,  title: "Cloud View",    desc: "Volumetric cloud simulation renderer.",         href: "/cloudview"  },
+  ];
+  return (
+    <div className="tab-content">
+      <div className="home-hero">
+        <div className="home-eyebrow">CPSC 490 · Group 4 · Game Dev</div>
+        <h1 className="home-greeting">Welcome back,<br /><em>Alex.</em></h1>
+        <p className="home-tagline">Your NPC configuration workspace. Pick up where you left off or explore a new area below.</p>
+        <div className="home-meta-row">
+          <span className="home-meta-chip"><span className="home-meta-dot" />Live in sandbox</span>
+          <span className="home-meta-chip">Last active 12 min ago</span>
+          <span className="home-meta-chip">3 unsaved changes</span>
+          <span className="home-meta-chip">v0.8.3 · build 4127</span>
+        </div>
+      </div>
+      <div className="home-section-label">Workspace</div>
+      <div className="home-grid">
+        {NAV_CARDS.map(c => (
+          <button key={c.title} className="home-card" onClick={c.action} style={{ border: "1px solid var(--line)" }}>
+            <div className="home-card-icon">{c.icon}</div>
+            <div className="home-card-title">{c.title}</div>
+            <div className="home-card-desc">{c.desc}</div>
+            {c.badge && <div className="home-card-badge"><span className="spec-pill mono">{c.badge}</span></div>}
+          </button>
+        ))}
+      </div>
+      <div className="home-section-label">Launch</div>
+      <div className="home-grid">
+        {LAUNCH_CARDS.map(c => (
+          <Link key={c.href} href={c.href} className="home-card" target="_blank" rel="noopener noreferrer" style={{ border: "1px solid var(--line)" }}>
+            <div className="home-card-icon">{c.icon}</div>
+            <div className="home-card-title">{c.title}</div>
+            <div className="home-card-desc">{c.desc}</div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Settings ---------- */
+function SettingsTab() {
+  return (
+    <div className="tab-content">
+
+      {/* 01 Profile */}
+      <section className="section">
+        <div className="section-head">
+          <div className="section-num">01</div>
+          <div><h2 className="section-title">Profile</h2><p className="section-desc">Your identity within this project workspace.</p></div>
+        </div>
+        <div className="profile-hero">
+          <div className="profile-avatar-lg" />
+          <div>
+            <div className="profile-hero-name">Alex Chen</div>
+            <div className="profile-hero-role">Game Developer · Group 4</div>
+            <div className="profile-hero-badge">{I.shield}<span>Admin</span></div>
+          </div>
+          <button className="pill-btn" style={{ marginLeft: "auto" }}>{I.copy}<span>Change photo</span></button>
+        </div>
+        <div>
+          {([
+            { label: "Display Name", sub: "Shown in exports and sim logs",  ctrl: <input className="settings-input" defaultValue="Alex Chen" /> },
+            { label: "Email",        sub: "Notifications go here",          ctrl: <input className="settings-input" defaultValue="alex.chen@studio.dev" /> },
+            { label: "Role",         sub: "Your function on this project",  ctrl: <select className="settings-select"><option>Game Developer</option><option>Designer</option><option>QA Engineer</option></select> },
+            { label: "Team",         sub: "Workspace group",                ctrl: <input className="settings-input" defaultValue="Group 4" /> },
+            { label: "Time Zone",    sub: "Used for scheduled sims",        ctrl: <select className="settings-select"><option>UTC−5 (Eastern)</option><option>UTC−8 (Pacific)</option><option>UTC+0 (London)</option></select> },
+          ] as { label: string; sub: string; ctrl: React.ReactNode }[]).map(r => (
+            <div key={r.label} className="settings-row">
+              <div className="settings-label">{r.label}<span className="settings-label-sub">{r.sub}</span></div>
+              <div className="settings-control">{r.ctrl}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 02 Preferences */}
+      <section className="section">
+        <div className="section-head">
+          <div className="section-num">02</div>
+          <div><h2 className="section-title">Preferences</h2><p className="section-desc">Application-level display and behaviour settings.</p></div>
+        </div>
+        <div>
+          {([
+            { label: "Theme",         sub: "Interface colour scheme",        ctrl: <select className="settings-select"><option>Light</option><option>Dark</option><option>System</option></select> },
+            { label: "Default Tab",   sub: "Tab shown on character open",    ctrl: <select className="settings-select"><option>Behavior</option><option>Animation</option><option>Memory</option></select> },
+            { label: "Autosave",      sub: "Save changes every 30 s",        ctrl: <button className="tog on" /> },
+            { label: "Show Tooltips", sub: "Inline parameter descriptions",  ctrl: <button className="tog on" /> },
+            { label: "Compact Mode",  sub: "Reduce padding in sections",     ctrl: <button className="tog" /> },
+            { label: "Language",      sub: "UI display language",            ctrl: <select className="settings-select"><option>English (US)</option><option>English (UK)</option><option>Español</option></select> },
+          ] as { label: string; sub: string; ctrl: React.ReactNode }[]).map(r => (
+            <div key={r.label} className="settings-row">
+              <div className="settings-label">{r.label}<span className="settings-label-sub">{r.sub}</span></div>
+              <div className="settings-control">{r.ctrl}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 03 Quick Launch */}
+      <section className="section">
+        <div className="section-head">
+          <div className="section-num">03</div>
+          <div><h2 className="section-title">Quick Launch</h2><p className="section-desc">Open any project environment directly.</p></div>
+        </div>
+        <div className="launch-grid">
+          {[
+            { href: "/sandbox",    icon: I.beaker, name: "Sandbox",        desc: "Interactive NPC test environment",   path: "/sandbox"    },
+            { href: "/game-demo",  icon: I.play,   name: "Game Demo",      desc: "First gameplay demo build",          path: "/game-demo"  },
+            { href: "/game-demo3", icon: I.ghost,  name: "Game Demo 3",    desc: "Latest build — boss encounter",      path: "/game-demo3" },
+            { href: "/cloudview",  icon: I.spark,  name: "Cloud View",     desc: "Cloud simulation renderer",          path: "/cloudview"  },
+            { href: "/cloudview2", icon: I.spark,  name: "Cloud View 2",   desc: "Updated volumetric renderer",        path: "/cloudview2" },
+            { href: "/threejs",    icon: I.scout,  name: "Three.js Scene", desc: "Raw Three.js debug scene",           path: "/threejs"    },
+          ].map(c => (
+            <Link key={c.href} href={c.href} className="launch-card" target="_blank" rel="noopener noreferrer">
+              <div className="launch-card-icon">{c.icon}</div>
+              <div className="launch-card-name">{c.name}</div>
+              <div className="launch-card-desc">{c.desc}</div>
+              <div className="launch-card-path">{c.path}</div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* 04 Notifications */}
+      <section className="section">
+        <div className="section-head">
+          <div className="section-num">04</div>
+          <div><h2 className="section-title">Notifications</h2><p className="section-desc">Choose which events trigger an alert.</p></div>
+        </div>
+        <div>
+          {[
+            { label: "Simulation complete", sub: "When a sandbox run finishes",      on: true  },
+            { label: "Build errors",         sub: "Compiler or deploy failures",      on: true  },
+            { label: "New character added",  sub: "When a teammate adds an NPC",      on: false },
+            { label: "Weekly digest",        sub: "Summary email every Monday",       on: true  },
+          ].map(r => (
+            <div key={r.label} className="settings-row">
+              <div className="settings-label">{r.label}<span className="settings-label-sub">{r.sub}</span></div>
+              <div className="settings-control"><button className={"tog" + (r.on ? " on" : "")} /></div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 05 API & Project */}
+      <section className="section">
+        <div className="section-head">
+          <div className="section-num">05</div>
+          <div><h2 className="section-title">API &amp; Project</h2><p className="section-desc">Project identifiers and integration settings.</p></div>
+        </div>
+        <div>
+          {([
+            { label: "Project ID",   sub: "Read-only workspace identifier", ctrl: <input className="settings-input" readOnly defaultValue="cpsc490-group4" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12 }} /> },
+            { label: "API Key",      sub: "Rotate every 90 days",           ctrl: <input className="settings-input" readOnly defaultValue="sk-••••••••••••••••4f2a" style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12 }} /> },
+            { label: "Build Target", sub: "Export compilation target",      ctrl: <select className="settings-select"><option>WebGL</option><option>Native (macOS)</option><option>Native (Win64)</option></select> },
+            { label: "Max Sessions", sub: "Parallel sandbox instances",     ctrl: <select className="settings-select"><option>1</option><option>3</option><option>5</option><option>10</option></select> },
+            { label: "SDK Version",  sub: "Simulation core library",        ctrl: <span className="spec-pill mono" style={{ fontSize: 12 }}>v2.4.1-stable</span> },
+          ] as { label: string; sub: string; ctrl: React.ReactNode }[]).map(r => (
+            <div key={r.label} className="settings-row">
+              <div className="settings-label">{r.label}<span className="settings-label-sub">{r.sub}</span></div>
+              <div className="settings-control">{r.ctrl}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 06 Danger Zone */}
+      <section className="section">
+        <div className="section-head">
+          <div className="section-num">06</div>
+          <div><h2 className="section-title">Danger Zone</h2><p className="section-desc">Irreversible actions — proceed with caution.</p></div>
+        </div>
+        <div>
+          {[
+            { label: "Reset preferences",     sub: "Restore all settings to factory defaults" },
+            { label: "Clear sandbox data",    sub: "Delete all recorded session logs and snapshots" },
+            { label: "Delete all characters", sub: "Permanently remove all 14 NPCs and their profiles" },
+          ].map(r => (
+            <div key={r.label} className="danger-row">
+              <div className="danger-row-text">
+                <div className="danger-row-label">{r.label}</div>
+                <div className="danger-row-sub">{r.sub}</div>
+              </div>
+              <button className="btn-danger">Delete</button>
+            </div>
+          ))}
+        </div>
+      </section>
+
     </div>
   );
 }
@@ -381,12 +741,12 @@ function App() {
         </div>
 
         <div className="nav-group">
-          <button className="nav-item">{I.home}<span>Home</span></button>
-          <button className="nav-item">{I.bot}<span>Characters</span><span className="badge">14</span></button>
-          <button className="nav-item active">{I.brain}<span>Behavior</span></button>
-          <button className="nav-item">{I.flow}<span>Flows</span></button>
+          <button className={"nav-item" + (tab === "Home" ? " active" : "")} onClick={() => setTab("Home")}>{I.home}<span>Home</span></button>
+          <button className={"nav-item" + (tab === "Characters" ? " active" : "")} onClick={() => setTab("Characters")}>{I.bot}<span>Characters</span><span className="badge">14</span></button>
+          <button className={"nav-item" + (tab === "Behavior" ? " active" : "")} onClick={() => setTab("Behavior")}>{I.brain}<span>Behavior</span></button>
+          <button className={"nav-item" + (tab === "Animation" ? " active" : "")} onClick={() => setTab("Animation")}>{I.play}<span>Animation</span></button>
+          <button className={"nav-item" + (tab === "Memory" ? " active" : "")} onClick={() => setTab("Memory")}>{I.chart}<span>Memory</span></button>
           <button className="nav-item">{I.beaker}<span>Sandbox</span></button>
-          <button className="nav-item">{I.chart}<span>Telemetry</span></button>
           <button className="nav-item">{I.files}<span>Exports</span></button>
         </div>
 
@@ -395,7 +755,7 @@ function App() {
           <button className="nav-item">{I.spark}<span>Recently played</span></button>
           <button className="nav-item">{I.folder}<span>Wraith — boss</span></button>
           <button className="nav-item">{I.folder}<span>Patrol grunts</span></button>
-          <button className="nav-item">{I.cog}<span>Project settings</span></button>
+          <button className={"nav-item" + (tab === "Settings" ? " active" : "")} onClick={() => setTab("Settings")}>{I.cog}<span>Settings</span></button>
         </div>
 
         <div className="sidebar-foot">
@@ -429,14 +789,16 @@ function App() {
         </div>
 
         <div className="page">
+          {tab === "Home" && <HomeTab onNavigate={setTab} />}
+
           {/* HEADER */}
-          <div className="page-head">
+          {tab !== "Home" && <div className="page-head">
             <div>
               <h1 className="page-title">Behavior Profile</h1>
               <p className="page-sub">Tune perception, judgement, and combat priorities for this NPC. Changes propagate live to running sandbox sessions.</p>
             </div>
             <div className="profile-meta">
-              <Tabs items={["Behavior", "Dialogue", "Animation", "Memory"]} active={tab} onChange={setTab} />
+              <Tabs items={["Behavior", "Animation", "Characters", "Memory"]} active={tab} onChange={setTab} />
               <div className="char-card">
                 <div className="char-portrait" />
                 <div>
@@ -445,8 +807,14 @@ function App() {
                 </div>
               </div>
             </div>
-          </div>
+          </div>}
 
+          {tab === "Characters" && <CharacterTab />}
+          {tab === "Animation" && <AnimationTab />}
+          {tab === "Memory" && <MemoryTab />}
+          {tab === "Settings" && <SettingsTab />}
+
+          {tab === "Behavior" && <div className="tab-content">
           {/* SECTION 1 — Personality */}
           <section className="section">
             <div className="section-head">
@@ -599,6 +967,7 @@ function App() {
               ))}
             </div>
           </section>
+          </div>}
 
           {/* Floating action bar */}
           <FloatingActionBar />
